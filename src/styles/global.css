@@ -1,0 +1,116 @@
+/* Drawer UX scaffold hooks (App-Starter baseline). */
+.drawer-body-scroll,
+.av-drawer-body-scroll {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.drawer-flex-scroll,
+.av-drawer-flex-scroll {
+  min-height: 0;
+}
+
+.drawer-footer-notice,
+.av-drawer-footer-notice {
+  min-height: 1.25rem;
+}
+
+.av-drawer-footer-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.av-drawer-footer-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.app-form-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.app-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.app-field-wide {
+  grid-column: span 2;
+}
+
+.app-label {
+  color: var(--av-text-soft, #9fb0c7);
+  font-size: 0.9rem;
+}
+
+.app-input {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 80%, transparent);
+  background: color-mix(in srgb, var(--av-surface, #081024) 88%, transparent);
+  color: var(--av-text-strong, #eaf2ff);
+  border-radius: 0.65rem;
+  padding: 0.62rem 0.7rem;
+}
+
+.app-form-error {
+  color: #ff9b9b;
+  font-size: 0.9rem;
+}
+
+.app-link {
+  color: var(--av-primary, #58c9ff);
+}
+
+.app-row-top {
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.app-meta-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.app-inline-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-inline-field .app-input {
+  min-width: 10rem;
+  width: auto;
+}
+
+@media (max-width: 640px) {
+  .av-drawer-footer-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .av-drawer-footer-actions :where(button, a) {
+    width: 100%;
+  }
+
+  .app-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-field-wide {
+    grid-column: span 1;
+  }
+
+  .app-inline-field {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .app-inline-field .app-input {
+    width: 100%;
+  }
+}

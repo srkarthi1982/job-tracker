@@ -1,0 +1,38 @@
+---
+import { AvButton, AvCard, AvContainer } from "@ansiversa/components";
+import AppShell from "../../layouts/AppShell.astro";
+
+const title = "AI Integration Standard – App Starter";
+const description = "Canonical Ansiversa V1 AI integration standard for mini-app and community developers.";
+---
+
+<AppShell title={title} description={description}>
+  <section class="av-section">
+    <AvContainer>
+      <div class="av-auth-stack-lg">
+        <AvCard className="av-auth-card">
+          <div class="av-auth-stack-md">
+            <div class="av-auth-stack-xs">
+              <p class="av-kicker">Developer Docs</p>
+              <h1 class="av-section-title">AI Integration Standard (V1)</h1>
+              <p class="av-text-soft">
+                Canonical source file: <code>docs/AI-INTEGRATION-STANDARD.md</code>
+              </p>
+            </div>
+
+            <div class="av-auth-stack-sm">
+              <p class="av-text-soft">Use parent AI Gateway only. Mini-apps must call local proxy routes and never call OpenAI directly.</p>
+              <p class="av-text-soft">Default UI pattern is <code>AvAiAssist</code> with 30/1500 gating and append/replace events.</p>
+              <p class="av-text-soft">Feature keys must be allowlisted in parent <code>featureRegistry.ts</code>.</p>
+              <p class="av-text-soft">Production parent origin must canonicalize to <code>https://www.ansiversa.com</code>.</p>
+            </div>
+
+            <div class="av-row-wrap">
+              <AvButton href="/docs">Back to Developer Docs</AvButton>
+            </div>
+          </div>
+        </AvCard>
+      </div>
+    </AvContainer>
+  </section>
+</AppShell>

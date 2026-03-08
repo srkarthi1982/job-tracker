@@ -1,0 +1,28 @@
+---
+import { AvButton, AvCard, AvContainer } from "@ansiversa/components";
+import AppShell from "../layouts/AppShell.astro";
+
+const title = "Help – Job Tracker";
+const description = "Quick guidance for Job Tracker V1.";
+---
+
+<AppShell title={title} description={description}>
+  <section class="av-section">
+    <AvContainer>
+      <div class="av-auth-stack-lg">
+        <AvCard className="av-auth-card">
+          <div class="av-auth-stack-sm">
+            <p class="av-kicker">Getting Started</p>
+            <h1 class="av-section-title">How Job Tracker works</h1>
+            <p class="av-text-soft">
+              Add an application, keep status updated, and review progress across applied, interview, and offer.
+            </p>
+            <div class="av-row-wrap">
+              <AvButton href="/app/job-applications">Go to applications</AvButton>
+            </div>
+          </div>
+        </AvCard>
+      </div>
+    </AvContainer>
+  </section>
+</AppShell>

@@ -1,0 +1,37 @@
+---
+import { AvButton, AvCard, AvContainer } from "@ansiversa/components";
+import AppShell from "../../layouts/AppShell.astro";
+
+const title = "Developer Docs – App Starter";
+const description = "Canonical implementation docs for community and mini-app developers.";
+---
+
+<AppShell title={title} description={description}>
+  <section class="av-section">
+    <AvContainer>
+      <div class="av-auth-stack-lg">
+        <AvCard className="av-auth-card">
+          <div class="av-auth-stack-md">
+            <div class="av-auth-stack-xs">
+              <p class="av-kicker">Developer Docs</p>
+              <h1 class="av-section-title">Standards and integration references</h1>
+              <p class="av-text-soft">
+                Use these docs as canonical build standards for Ansiversa mini-app integrations.
+              </p>
+            </div>
+
+            <div class="av-auth-stack-sm">
+              <div class="av-row-wrap">
+                <AvButton href="/docs/ai-integration">AI Integration Standard</AvButton>
+                <AvButton href="/docs/drawer-ux-demo" variant="ghost">Drawer UX Demo</AvButton>
+              </div>
+              <div class="av-row-wrap">
+                <AvButton href="#" variant="ghost" aria-disabled="true">Dashboard Integration Standard (Coming soon)</AvButton>
+              </div>
+            </div>
+          </div>
+        </AvCard>
+      </div>
+    </AvContainer>
+  </section>
+</AppShell>

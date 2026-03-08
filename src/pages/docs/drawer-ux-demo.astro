@@ -1,0 +1,106 @@
+---
+import { AvButton, AvCard, AvContainer, AvInput } from "@ansiversa/components";
+import CreateDrawer from "../../components/drawers/CreateDrawer.astro";
+import AppShell from "../../layouts/AppShell.astro";
+
+const title = "Drawer UX Demo – App Starter";
+const description = "Minimal adoption-proof demo for Drawer UX Standard V1.";
+const scrollHints = Array.from({ length: 10 }, (_, index) => `Demo scroll row ${index + 1}: drawer body remains scroll-safe.`);
+---
+
+<AppShell title={title} description={description}>
+  <section class="av-section">
+    <AvContainer>
+      <div
+        class="av-auth-stack-lg"
+        x-data="{
+          demoTitle: '',
+          async submitCreate() {
+            if ($store.appDrawer.loading.create) return;
+
+            const title = this.demoTitle.trim();
+            if (!title) {
+              $store.appDrawer.setError('Title is required in this demo.', 'create');
+              return;
+            }
+
+            $store.appDrawer.resetError('create');
+            $store.appDrawer.setActionLoading('create', true);
+            try {
+              await new Promise((resolve) => window.setTimeout(resolve, 800));
+              this.demoTitle = '';
+              $store.appDrawer.close();
+            } finally {
+              $store.appDrawer.setActionLoading('create', false);
+            }
+          }
+        }"
+      >
+        <AvCard className="av-auth-card">
+          <div class="av-auth-stack-md">
+            <div class="av-auth-stack-xs">
+              <p class="av-kicker">Developer Docs</p>
+              <h1 class="av-section-title">Drawer UX demo route</h1>
+              <p class="av-text-soft">
+                This page demonstrates Create Drawer open/close flow, drawer-footer validation notice,
+                and loading guard behavior.
+              </p>
+            </div>
+
+            <div class="av-row-wrap">
+              <AvButton
+                type="button"
+                @click="$store.appDrawer.open('create')"
+                :disabled="$store.appDrawer.isActionLoading()"
+              >
+                Open Create Drawer
+              </AvButton>
+              <AvButton href="/docs" variant="ghost">Back to Developer Docs</AvButton>
+            </div>
+          </div>
+        </AvCard>
+
+        <template x-if="$store.appDrawer.activeDrawer === 'create'">
+          <CreateDrawer
+            title="Create Demo Item"
+            description="Validation is intentionally local for scaffold demonstration."
+            open={true}
+            onClose="$store.appDrawer.close()"
+          >
+            <div class="av-auth-stack-md drawer-flex-scroll av-drawer-flex-scroll">
+              <AvInput
+                label="Title"
+                name="demo-title"
+                placeholder="Enter title"
+                required
+                x-model="demoTitle"
+              />
+
+              <div class="av-auth-stack-xxs">
+                {scrollHints.map((row) => <p class="av-text-soft">{row}</p>)}
+              </div>
+            </div>
+
+            <div slot="notice">
+              <template x-if="$store.appDrawer.getError('create')">
+                <div class="av-alert av-alert-danger" role="status" x-text="$store.appDrawer.getError('create')"></div>
+              </template>
+            </div>
+
+            <div slot="actions" class="av-row-wrap av-drawer-footer-actions">
+              <AvButton variant="ghost" type="button" @click="$store.appDrawer.close()">Cancel</AvButton>
+              <AvButton
+                type="button"
+                @click="submitCreate()"
+                :disabled="$store.appDrawer.loading.create"
+              >
+                <span x-show="!$store.appDrawer.loading.create">Create</span>
+                <span x-show="$store.appDrawer.loading.create">Creating...</span>
+              </AvButton>
+            </div>
+          </CreateDrawer>
+        </template>
+      </div>
+    </AvContainer>
+  </section>
+</AppShell>

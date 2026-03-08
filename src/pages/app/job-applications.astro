@@ -1,0 +1,244 @@
+---
+import {
+  AvBreadcrumb,
+  AvButton,
+  AvCard,
+  AvContainer,
+  AvEmptyState,
+} from "@ansiversa/components";
+import { actions } from "astro:actions";
+import CreateDrawer from "../../components/drawers/CreateDrawer.astro";
+import SettingsDrawer from "../../components/drawers/SettingsDrawer.astro";
+import AppShell from "../../layouts/AppShell.astro";
+import { JOB_APPLICATION_STATUS, type JobApplicationDTO } from "../../modules/job-applications/types";
+
+const title = "Job Applications – Job Tracker";
+const description = "Manage your job application pipeline.";
+
+const result = await Astro.callAction(actions.jobApplications.fetchMyApplications, {
+  limit: 200,
+});
+const data = (result as any)?.data ?? (result as any) ?? {};
+const applications = (data?.applications ?? []) as JobApplicationDTO[];
+
+const statusLabel: Record<string, string> = {
+  wishlist: "Wishlist",
+  applied: "Applied",
+  interview: "Interview",
+  offer: "Offer",
+  rejected: "Rejected",
+};
+---
+
+<AppShell title={title} description={description}>
+  <section class="av-faq-public__crumb">
+    <AvContainer>
+      <AvBreadcrumb
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Applications" },
+        ]}
+      />
+    </AvContainer>
+  </section>
+
+  <section
+    class="av-section"
+    x-data="{ statusLabel: { wishlist: 'Wishlist', applied: 'Applied', interview: 'Interview', offer: 'Offer', rejected: 'Rejected' } }"
+  >
+    <AvContainer>
+      <div
+        class="av-auth-stack-lg"
+        x-data="$store.jobApplications"
+        x-init={`init(${JSON.stringify({ applications })})`}
+        @job-app-drawer-open.window="if ($event.detail?.key) { $store.appDrawer.open($event.detail.key) }"
+        @job-app-drawer-close.window="$store.appDrawer.close()"
+      >
+        <AvCard className="av-auth-stack-md">
+          <div class="av-row-between">
+            <div>
+              <p class="av-kicker">Job Tracker</p>
+              <h1 class="av-section-title">Your job applications</h1>
+              <p class="av-text-soft">Track applications, interviews, offers, and outcomes in one place.</p>
+            </div>
+            <AvButton type="button" @click="openCreate">Create application</AvButton>
+          </div>
+          <template x-if="success">
+            <p class="av-text-soft" x-text="success"></p>
+          </template>
+          <template x-if="error">
+            <p class="app-form-error" x-text="error"></p>
+          </template>
+        </AvCard>
+
+        <AvCard variant="soft" className="av-auth-stack-md">
+          <div class="av-row-between">
+            <h2 class="av-card-heading">Applications</h2>
+            <p class="av-text-soft"><span x-text="applications.length"></span> total</p>
+          </div>
+
+          <template x-if="applications.length === 0">
+            <AvEmptyState
+              title="No applications yet"
+              description="Create your first application to start tracking your job search."
+            />
+          </template>
+
+          <template x-if="applications.length > 0">
+            <div class="av-auth-stack-sm">
+              <template x-for="application in applications" :key="application.id">
+                <div class="av-card av-card-soft av-auth-stack-xs">
+                  <div class="av-row-between app-row-top">
+                    <div>
+                      <h3 class="av-card-heading" x-text="application.companyName"></h3>
+                      <p class="av-text-soft">
+                        <span x-text="application.roleTitle"></span>
+                        · Applied <span x-text="application.appliedDate"></span>
+                      </p>
+                    </div>
+                    <span class="av-badge av-badge-soft">
+                      <span x-text="statusLabel[application.status] || application.status"></span>
+                    </span>
+                  </div>
+
+                  <div class="app-meta-grid">
+                    <label class="app-inline-field">
+                      <span class="av-text-soft">Status</span>
+                      <select
+                        :value="application.status"
+                        @change="quickUpdateStatus(application.id, $event.target.value)"
+                        :disabled="loading"
+                        class="app-input"
+                      >
+                        {JOB_APPLICATION_STATUS.map((status) => (
+                          <option value={status}>{statusLabel[status] ?? status}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <template x-if="application.location">
+                      <p class="av-text-soft">Location: <span x-text="application.location"></span></p>
+                    </template>
+
+                    <template x-if="application.jobUrl">
+                      <p class="av-text-soft">
+                        Job URL: <a class="app-link" :href="application.jobUrl" target="_blank" rel="noreferrer">Open listing</a>
+                      </p>
+                    </template>
+
+                    <template x-if="application.notes">
+                      <p class="av-text-soft">Notes: <span x-text="application.notes"></span></p>
+                    </template>
+                  </div>
+
+                  <div class="av-row-wrap">
+                    <AvButton type="button" variant="ghost" @click="openEdit(application)" :disabled="loading">Edit</AvButton>
+                    <AvButton type="button" variant="ghost" @click="deleteApplication(application.id)" :disabled="loading">Delete</AvButton>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </AvCard>
+
+        <template x-if="$store.appDrawer.activeDrawer === 'create'">
+          <CreateDrawer title="Create application" description="Add a new job application entry.">
+            <div class="app-form-grid">
+              <label class="app-field">
+                <span class="app-label">Company name</span>
+                <input class="app-input" type="text" x-model="form.companyName" maxlength="120" />
+              </label>
+              <label class="app-field">
+                <span class="app-label">Role title</span>
+                <input class="app-input" type="text" x-model="form.roleTitle" maxlength="120" />
+              </label>
+              <label class="app-field">
+                <span class="app-label">Status</span>
+                <select class="app-input" x-model="form.status">
+                  {JOB_APPLICATION_STATUS.map((status) => (
+                    <option value={status}>{statusLabel[status] ?? status}</option>
+                  ))}
+                </select>
+              </label>
+              <label class="app-field">
+                <span class="app-label">Applied date</span>
+                <input class="app-input" type="date" x-model="form.appliedDate" />
+              </label>
+              <label class="app-field">
+                <span class="app-label">Job URL</span>
+                <input class="app-input" type="url" x-model="form.jobUrl" maxlength="400" placeholder="https://" />
+              </label>
+              <label class="app-field">
+                <span class="app-label">Location</span>
+                <input class="app-input" type="text" x-model="form.location" maxlength="120" />
+              </label>
+              <label class="app-field app-field-wide">
+                <span class="app-label">Notes</span>
+                <textarea class="app-input" x-model="form.notes" rows="4" maxlength="2000"></textarea>
+              </label>
+            </div>
+            <div slot="notice">
+              <p class="app-form-error" x-show="error" x-text="error"></p>
+            </div>
+            <div slot="actions" class="av-row-wrap av-drawer-footer-actions">
+              <AvButton variant="ghost" type="button" @click="$store.appDrawer.close()" :disabled="loading">Cancel</AvButton>
+              <AvButton type="button" @click="submitCreate" :disabled="loading">
+                <span x-show="!loading">Create application</span>
+                <span x-show="loading">Saving...</span>
+              </AvButton>
+            </div>
+          </CreateDrawer>
+        </template>
+
+        <template x-if="$store.appDrawer.activeDrawer === 'settings'">
+          <SettingsDrawer title="Edit application" description="Update details or status.">
+            <div class="app-form-grid">
+              <label class="app-field">
+                <span class="app-label">Company name</span>
+                <input class="app-input" type="text" x-model="form.companyName" maxlength="120" />
+              </label>
+              <label class="app-field">
+                <span class="app-label">Role title</span>
+                <input class="app-input" type="text" x-model="form.roleTitle" maxlength="120" />
+              </label>
+              <label class="app-field">
+                <span class="app-label">Status</span>
+                <select class="app-input" x-model="form.status">
+                  {JOB_APPLICATION_STATUS.map((status) => (
+                    <option value={status}>{statusLabel[status] ?? status}</option>
+                  ))}
+                </select>
+              </label>
+              <label class="app-field">
+                <span class="app-label">Applied date</span>
+                <input class="app-input" type="date" x-model="form.appliedDate" />
+              </label>
+              <label class="app-field">
+                <span class="app-label">Job URL</span>
+                <input class="app-input" type="url" x-model="form.jobUrl" maxlength="400" placeholder="https://" />
+              </label>
+              <label class="app-field">
+                <span class="app-label">Location</span>
+                <input class="app-input" type="text" x-model="form.location" maxlength="120" />
+              </label>
+              <label class="app-field app-field-wide">
+                <span class="app-label">Notes</span>
+                <textarea class="app-input" x-model="form.notes" rows="4" maxlength="2000"></textarea>
+              </label>
+            </div>
+            <div slot="notice">
+              <p class="app-form-error" x-show="error" x-text="error"></p>
+            </div>
+            <div slot="actions" class="av-row-wrap av-drawer-footer-actions">
+              <AvButton variant="ghost" type="button" @click="$store.appDrawer.close()" :disabled="loading">Cancel</AvButton>
+              <AvButton type="button" @click="submitUpdate" :disabled="loading">
+                <span x-show="!loading">Save changes</span>
+                <span x-show="loading">Saving...</span>
+              </AvButton>
+            </div>
+          </SettingsDrawer>
+        </template>
+      </div>
+    </AvContainer>
+  </section>
+</AppShell>
