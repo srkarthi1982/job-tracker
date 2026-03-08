@@ -1,0 +1,40 @@
+⚠️ Mandatory: AI agents must read this file before writing or modifying any code.
+
+MANDATORY: After completing each task, update this repo’s AGENTS.md Task Log (newest-first) before marking the task done.
+This file complements the workspace-level Ansiversa-workspace/AGENTS.md (source of truth). Read workspace first.
+
+# AGENTS.md
+## Job Tracker Repo – Session Notes (Codex)
+
+## Current Architecture
+- Astro mini-app derived from `app-starter` and aligned to Ansiversa standards.
+- Parent auth/session boundary preserved (JWT + middleware pattern).
+- User-only Slice 1 scope (no app-specific admin pages).
+- Drawer UX pattern used for create/edit flows.
+
+## App Identity
+- `appId`: `job-tracker`
+- `slug`: `job-tracker`
+- `name`: `Job Tracker`
+
+## Parent Registry Intent (Planning Only)
+- `appId`: `job-tracker`
+- `slug`: `job-tracker`
+- `name`: `Job Tracker`
+- `description`: "Track job applications from wishlist to offer."
+- `launchStatus`: `beta`
+- `visibility`: `public`
+- `pricingGate`: `free`
+- Registry write deferred in Slice 1 (no parent write performed).
+
+## Task Log (Recent)
+- 2026-03-08 Verification checklist created: added `docs/verification/job-tracker-slice-1-checklist.md` with build/typecheck, CRUD flow, status update, empty state, drawer mobile behavior, dashboard summary checks, and governance checks.
+- 2026-03-08 Dashboard summary baseline added: implemented `src/dashboard/summary.schema.ts` with `JobTrackerDashboardSummaryV1` contract and status counts (`applied`, `interview`, `offer`) + total applications; wired activity push helper `src/lib/pushActivity.ts` for parent dashboard webhook payload preparation.
+- 2026-03-08 Core user flow implemented: added job applications actions/store/routes for create/list/edit/status update/delete using drawer UX (`src/actions/jobApplications.ts`, `src/modules/job-applications/store.ts`, `src/pages/app/job-applications.astro`), including predictable error handling and loading/double-submit guards.
+- 2026-03-08 DB/data model created: replaced starter example table with `job_applications` in `db/tables.ts` + `db/config.ts` with required Slice 1 fields (`id`, `userId`, `companyName`, `roleTitle`, `status`, `appliedDate`, optional `jobUrl/location/notes`, `createdAt`, `updatedAt`) and constrained status contract (`wishlist`, `applied`, `interview`, `offer`, `rejected`).
+- 2026-03-08 Repo bootstrap from app-starter baseline: scaffolded `job-tracker` from `app-starter`, removed example-items/admin/bookmarks scaffolding, switched app identity to `job-tracker`, created app route baseline (`/app/job-applications`), and preserved shared auth/layout patterns.
+
+## Deferred to Slice 2
+- Parent registry write execution in `web` admin/registry flows.
+- Optional dedicated details/editor route beyond list + drawer flow.
+- Additional analytics or notification events beyond baseline activity summary push.
