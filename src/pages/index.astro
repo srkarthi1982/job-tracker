@@ -41,12 +41,10 @@ const recentApplications = applications
 
 <AppShell title={title} description={description}>
   <section class="job-home-hero">
-    <AvContainer size="default">
+    <AvContainer size="default" className="job-home-container">
       <div class="job-home-hero__grid">
         <div class="job-home-hero__text">
-          <div class="av-kicker">
-            <span>Career Pipeline · Ansiversa Mini App</span>
-          </div>
+          <p class="job-home-eyebrow">Career Pipeline · Ansiversa Mini App</p>
           <h1 class="job-home-hero__title">Job Tracker</h1>
           <p class="job-home-hero__lead">
             Keep every application stage visible, move quickly on updates, and review your search momentum without spreadsheet overhead.
@@ -76,11 +74,11 @@ const recentApplications = applications
               ))}
             </ol>
             <div class="job-home-hero__panel-footer">
-              <div>
+              <div class="job-home-hero__panel-metric">
                 <p class="job-home-hero__panel-label">Active pipeline</p>
                 <p class="job-home-hero__panel-value">{activeCount}</p>
               </div>
-              <div>
+              <div class="job-home-hero__panel-metric">
                 <p class="job-home-hero__panel-label">Closed outcomes</p>
                 <p class="job-home-hero__panel-value">{statusCounts.rejected + statusCounts.accepted}</p>
               </div>
@@ -110,8 +108,8 @@ const recentApplications = applications
     </AvContainer>
   </section>
 
-  <section class="av-section">
-    <AvContainer size="default">
+  <section class="av-section job-home-pillars-section">
+    <AvContainer size="default" className="job-home-container">
       <div class="job-home-section-head">
         <h2 class="av-section-title">What makes Job Tracker different</h2>
         <p class="av-section-lead">
@@ -140,8 +138,8 @@ const recentApplications = applications
   </section>
 
   <section class="av-section">
-    <AvContainer size="default">
-      <AvCard variant="soft" className="av-auth-stack-md">
+    <AvContainer size="default" className="job-home-container">
+      <AvCard variant="soft" className="job-home-recent-card">
         <div class="av-row-between app-row-top">
           <h2 class="av-card-heading">Recent applications</h2>
           <AvButton variant="ghost" href="/app/job-applications">View full pipeline</AvButton>

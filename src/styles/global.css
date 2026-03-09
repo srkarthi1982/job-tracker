@@ -105,30 +105,44 @@
 }
 
 .job-home-hero {
-  padding-top: 1.75rem;
+  padding-top: 2.25rem;
+}
+
+.job-home-container {
+  max-width: 1180px;
 }
 
 .job-home-hero__grid {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: 1.15fr 0.85fr;
+  gap: 1.25rem;
+  grid-template-columns: 1.25fr 0.75fr;
 }
 
 .job-home-hero__text {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 1rem;
+}
+
+.job-home-eyebrow {
+  margin: 0;
+  color: var(--av-primary, #58c9ff);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .job-home-hero__title {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  line-height: 1.1;
+  font-size: clamp(2.35rem, 5vw, 3.35rem);
+  line-height: 1.04;
 }
 
 .job-home-hero__lead {
   margin: 0;
   color: var(--av-text-soft, #9fb0c7);
+  line-height: 1.6;
+  max-width: 60ch;
 }
 
 .job-home-hero__bullets {
@@ -147,23 +161,24 @@
 .job-home-hero__cta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.75rem;
+  margin-top: 0.2rem;
 }
 
 .job-home-hero__note {
   margin: 0;
   color: color-mix(in srgb, var(--av-text-soft, #9fb0c7) 82%, white 18%);
-  font-size: 0.88rem;
+  font-size: 0.9rem;
 }
 
 .job-home-hero__panel-card {
   border: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 82%, transparent);
   border-radius: 1rem;
   background: color-mix(in srgb, var(--av-surface, #081024) 90%, transparent);
-  padding: 1rem;
+  padding: 1.05rem 1.05rem 1.1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.9rem;
 }
 
 .job-home-hero__panel-kicker {
@@ -176,7 +191,8 @@
 
 .job-home-hero__panel-title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.12rem;
+  line-height: 1.3;
 }
 
 .job-home-hero__panel-list {
@@ -185,7 +201,7 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 
 .job-home-hero__panel-list li {
@@ -194,16 +210,32 @@
   align-items: center;
   gap: 0.5rem;
   color: var(--av-text-soft, #9fb0c7);
+  padding: 0.26rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 36%, transparent);
+}
+
+.job-home-hero__panel-list li:last-child {
+  border-bottom: none;
 }
 
 .job-home-hero__panel-list strong {
   color: var(--av-text-strong, #eaf2ff);
+  font-size: 1.02rem;
 }
 
 .job-home-hero__panel-footer {
+  border-top: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 60%, transparent);
+  padding-top: 0.7rem;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
+  gap: 0.75rem;
+}
+
+.job-home-hero__panel-metric {
+  border: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 48%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--av-surface, #081024) 82%, transparent);
+  padding: 0.55rem 0.6rem;
 }
 
 .job-home-hero__panel-label {
@@ -214,66 +246,80 @@
 
 .job-home-hero__panel-value {
   margin: 0.15rem 0 0;
-  font-size: 1.2rem;
+  font-size: 1.28rem;
   font-weight: 700;
 }
 
 .job-home-stats {
-  margin-top: 1rem;
+  margin-top: 1.2rem;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.9rem;
 }
 
 .job-home-stat {
   border: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 72%, transparent);
   border-radius: 0.9rem;
   background: color-mix(in srgb, var(--av-surface, #081024) 86%, transparent);
-  padding: 0.8rem 0.9rem;
+  min-height: 104px;
+  padding: 1rem 1.02rem;
 }
 
 .job-home-stat__value {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
   color: var(--av-text-strong, #eaf2ff);
+  line-height: 1.1;
 }
 
 .job-home-stat__label {
-  margin: 0.2rem 0 0;
+  margin: 0.35rem 0 0;
   color: var(--av-text-soft, #9fb0c7);
   font-size: 0.9rem;
+}
+
+.job-home-pillars-section {
+  margin-top: 0.75rem;
 }
 
 .job-home-section-head {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
+  gap: 0.55rem;
+  margin-bottom: 1.25rem;
 }
 
 .job-home-pillars {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.95rem;
 }
 
 .job-home-pillar {
   min-height: 100%;
+  padding: 1rem;
 }
 
 .job-home-recent-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.85rem;
-  padding: 0.8rem 0.9rem;
+  gap: 0.75rem;
+  padding: 0.72rem 0.88rem;
+}
+
+.job-home-recent-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
 }
 
 .job-home-empty {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.55rem;
 }
 
 .app-inline-field {
@@ -331,10 +377,15 @@
 
   .job-home-hero__grid {
     grid-template-columns: 1fr;
+    gap: 0.95rem;
   }
 
   .job-home-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .job-home-stat {
+    min-height: 94px;
   }
 
   .job-home-pillars {
