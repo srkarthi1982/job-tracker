@@ -90,7 +90,7 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
         <AvCard variant="soft" className="av-auth-stack-sm">
           <div class="av-row-between">
             <h2 class="av-card-heading">Pipeline snapshot</h2>
-            <p class="av-text-soft"><span x-text="closedCount"></span> closed</p>
+            <p class="av-text-soft"><span x-text="closedCount"></span> closed outcomes</p>
           </div>
           <div class="app-pipeline-grid">
             {JOB_APPLICATION_STATUS.map((status) => (

@@ -40,94 +40,137 @@ const recentApplications = applications
 ---
 
 <AppShell title={title} description={description}>
-  <section class="av-section">
-    <AvContainer>
-      <div class="av-auth-stack-lg">
-        <AvCard className="av-auth-card">
-          <div class="av-auth-stack-md">
-            <div class="av-auth-stack-xs">
-              <p class="av-kicker">Career Pipeline</p>
-              <h1 class="av-section-title">Job Tracker</h1>
-              <p class="av-text-soft">
-                Track each application stage, spot momentum at a glance, and move from wishlist to accepted offer.
-              </p>
-            </div>
+  <section class="job-home-hero">
+    <AvContainer size="default">
+      <div class="job-home-hero__grid">
+        <div class="job-home-hero__text">
+          <div class="av-kicker">
+            <span>Career Pipeline · Ansiversa Mini App</span>
+          </div>
+          <h1 class="job-home-hero__title">Job Tracker</h1>
+          <p class="job-home-hero__lead">
+            Keep every application stage visible, move quickly on updates, and review your search momentum without spreadsheet overhead.
+          </p>
+          <div class="job-home-hero__bullets">
+            <span>Track pipeline stages from wishlist to accepted</span>
+            <span>Update statuses quickly from one focused flow</span>
+            <span>Keep a clean, review-ready application history</span>
+          </div>
+          <div class="job-home-hero__cta">
+            <AvButton href="/app/job-applications">Open Job Tracker</AvButton>
+            <AvButton variant="ghost" href="/help">Help</AvButton>
+          </div>
+          <p class="job-home-hero__note">Simple daily flow. Clear weekly review.</p>
+        </div>
 
-            <div class="av-row-wrap">
-              <AvButton href="/app/job-applications">View applications</AvButton>
-              <AvButton variant="ghost" href="/help">Help</AvButton>
+        <div class="job-home-hero__panel">
+          <div class="job-home-hero__panel-card">
+            <p class="job-home-hero__panel-kicker">Your pipeline</p>
+            <h2 class="job-home-hero__panel-title">Current stage breakdown</h2>
+            <ol class="job-home-hero__panel-list">
+              {JOB_APPLICATION_STATUS.map((status) => (
+                <li>
+                  <span>{JOB_APPLICATION_STATUS_LABEL[status]}</span>
+                  <strong>{statusCounts[status]}</strong>
+                </li>
+              ))}
+            </ol>
+            <div class="job-home-hero__panel-footer">
+              <div>
+                <p class="job-home-hero__panel-label">Active pipeline</p>
+                <p class="job-home-hero__panel-value">{activeCount}</p>
+              </div>
+              <div>
+                <p class="job-home-hero__panel-label">Closed outcomes</p>
+                <p class="job-home-hero__panel-value">{statusCounts.rejected + statusCounts.accepted}</p>
+              </div>
             </div>
           </div>
-        </AvCard>
+        </div>
+      </div>
 
-        {applications.length === 0 && (
-          <AvCard variant="soft" className="av-auth-stack-md">
+      <div class="job-home-stats">
+        <div class="job-home-stat">
+          <p class="job-home-stat__value">{applications.length}</p>
+          <p class="job-home-stat__label">Total applications</p>
+        </div>
+        <div class="job-home-stat">
+          <p class="job-home-stat__value">{activeCount}</p>
+          <p class="job-home-stat__label">Active pipeline</p>
+        </div>
+        <div class="job-home-stat">
+          <p class="job-home-stat__value">{statusCounts.interview}</p>
+          <p class="job-home-stat__label">Interviews</p>
+        </div>
+        <div class="job-home-stat">
+          <p class="job-home-stat__value">{statusCounts.offer}</p>
+          <p class="job-home-stat__label">Offers</p>
+        </div>
+      </div>
+    </AvContainer>
+  </section>
+
+  <section class="av-section">
+    <AvContainer size="default">
+      <div class="job-home-section-head">
+        <h2 class="av-section-title">What makes Job Tracker different</h2>
+        <p class="av-section-lead">
+          Built for pipeline clarity so every status update gives you useful next-step visibility.
+        </p>
+      </div>
+
+      <div class="job-home-pillars">
+        <AvCard variant="soft" className="job-home-pillar">
+          <p class="av-kicker">Pillar 01</p>
+          <h3 class="av-card-heading">Pipeline-first tracking</h3>
+          <p class="av-text-soft">Every application maps to a clear stage so your search never gets scattered.</p>
+        </AvCard>
+        <AvCard variant="soft" className="job-home-pillar">
+          <p class="av-kicker">Pillar 02</p>
+          <h3 class="av-card-heading">Fast status updates</h3>
+          <p class="av-text-soft">Quick stage changes keep counts accurate without leaving the main list flow.</p>
+        </AvCard>
+        <AvCard variant="soft" className="job-home-pillar">
+          <p class="av-kicker">Pillar 03</p>
+          <h3 class="av-card-heading">Clean review history</h3>
+          <p class="av-text-soft">Recent items and stage totals make weekly review easy and objective.</p>
+        </AvCard>
+      </div>
+    </AvContainer>
+  </section>
+
+  <section class="av-section">
+    <AvContainer size="default">
+      <AvCard variant="soft" className="av-auth-stack-md">
+        <div class="av-row-between app-row-top">
+          <h2 class="av-card-heading">Recent applications</h2>
+          <AvButton variant="ghost" href="/app/job-applications">View full pipeline</AvButton>
+        </div>
+
+        {applications.length === 0 ? (
+          <div class="job-home-empty">
             <AvEmptyState
               title="No applications yet"
-              description="Create your first application to start tracking your pipeline."
+              description="Create your first application to start building your pipeline."
             />
             <div>
               <AvButton href="/app/job-applications">Create first application</AvButton>
             </div>
-          </AvCard>
+          </div>
+        ) : (
+          <div class="av-auth-stack-xs">
+            {recentApplications.map((application) => (
+              <div class="av-card av-card-soft job-home-recent-item">
+                <div>
+                  <h3 class="av-card-heading">{application.companyName}</h3>
+                  <p class="av-text-soft">{application.roleTitle} · Applied {application.appliedDate}</p>
+                </div>
+                <span class="av-badge av-badge-soft">{JOB_APPLICATION_STATUS_LABEL[application.status]}</span>
+              </div>
+            ))}
+          </div>
         )}
-
-        {applications.length > 0 && (
-          <>
-            <div class="app-home-summary-grid">
-              <AvCard variant="soft">
-                <p class="av-text-soft">Total applications</p>
-                <h2 class="av-section-title">{applications.length}</h2>
-              </AvCard>
-              <AvCard variant="soft">
-                <p class="av-text-soft">Interviews</p>
-                <h2 class="av-section-title">{statusCounts.interview}</h2>
-              </AvCard>
-              <AvCard variant="soft">
-                <p class="av-text-soft">Offers</p>
-                <h2 class="av-section-title">{statusCounts.offer}</h2>
-              </AvCard>
-              <AvCard variant="soft">
-                <p class="av-text-soft">Active pipeline</p>
-                <h2 class="av-section-title">{activeCount}</h2>
-              </AvCard>
-            </div>
-
-            <AvCard variant="soft" className="av-auth-stack-md">
-              <div class="av-row-between app-row-top">
-                <h2 class="av-card-heading">Pipeline overview</h2>
-                <p class="av-text-soft">{statusCounts.rejected + statusCounts.accepted} closed outcomes</p>
-              </div>
-              <div class="app-home-pipeline-grid">
-                {JOB_APPLICATION_STATUS.map((status) => (
-                  <div class="av-card av-card-soft app-home-pipeline-item">
-                    <p class="av-text-soft">{JOB_APPLICATION_STATUS_LABEL[status]}</p>
-                    <p class="av-card-heading">{statusCounts[status]}</p>
-                  </div>
-                ))}
-              </div>
-            </AvCard>
-
-            <AvCard variant="soft" className="av-auth-stack-md">
-              <div class="av-row-between app-row-top">
-                <h2 class="av-card-heading">Recent applications</h2>
-                <AvButton variant="ghost" href="/app/job-applications">Open full pipeline</AvButton>
-              </div>
-              <div class="av-auth-stack-xs">
-                {recentApplications.map((application) => (
-                  <div class="av-card av-card-soft app-home-recent-item">
-                    <div>
-                      <h3 class="av-card-heading">{application.companyName}</h3>
-                      <p class="av-text-soft">{application.roleTitle} · Applied {application.appliedDate}</p>
-                    </div>
-                    <span class="av-badge av-badge-soft">{JOB_APPLICATION_STATUS_LABEL[application.status]}</span>
-                  </div>
-                ))}
-              </div>
-            </AvCard>
-          </>
-        )}
-      </div>
+      </AvCard>
     </AvContainer>
   </section>
 </AppShell>
