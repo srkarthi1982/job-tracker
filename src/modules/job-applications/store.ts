@@ -34,6 +34,34 @@ export class JobApplicationsStore extends AvBaseStore implements ReturnType<type
     this.applications = initial?.applications ?? [];
   }
 
+  get statusCounts() {
+    const counts: Record<JobApplicationStatus, number> = {
+      wishlist: 0,
+      applied: 0,
+      interview: 0,
+      offer: 0,
+      rejected: 0,
+      accepted: 0,
+    };
+
+    for (const application of this.applications) {
+      counts[application.status] += 1;
+    }
+
+    return counts;
+  }
+
+  get activeCount() {
+    return this.statusCounts.wishlist
+      + this.statusCounts.applied
+      + this.statusCounts.interview
+      + this.statusCounts.offer;
+  }
+
+  get closedCount() {
+    return this.statusCounts.rejected + this.statusCounts.accepted;
+  }
+
   private unwrapResult<T = any>(result: any): T {
     if (result?.error) {
       const message = result.error?.message || result.error;

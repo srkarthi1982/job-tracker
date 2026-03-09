@@ -10,7 +10,11 @@ import { actions } from "astro:actions";
 import CreateDrawer from "../../components/drawers/CreateDrawer.astro";
 import SettingsDrawer from "../../components/drawers/SettingsDrawer.astro";
 import AppShell from "../../layouts/AppShell.astro";
-import { JOB_APPLICATION_STATUS, type JobApplicationDTO } from "../../modules/job-applications/types";
+import {
+  JOB_APPLICATION_STATUS,
+  JOB_APPLICATION_STATUS_LABEL,
+  type JobApplicationDTO,
+} from "../../modules/job-applications/types";
 
 const title = "Job Applications – Job Tracker";
 const description = "Manage your job application pipeline.";
@@ -21,13 +25,6 @@ const result = await Astro.callAction(actions.jobApplications.fetchMyApplication
 const data = (result as any)?.data ?? (result as any) ?? {};
 const applications = (data?.applications ?? []) as JobApplicationDTO[];
 
-const statusLabel: Record<string, string> = {
-  wishlist: "Wishlist",
-  applied: "Applied",
-  interview: "Interview",
-  offer: "Offer",
-  rejected: "Rejected",
-};
 ---
 
 <AppShell title={title} description={description}>
@@ -44,7 +41,7 @@ const statusLabel: Record<string, string> = {
 
   <section
     class="av-section"
-    x-data="{ statusLabel: { wishlist: 'Wishlist', applied: 'Applied', interview: 'Interview', offer: 'Offer', rejected: 'Rejected' } }"
+    x-data={`{ statusLabel: ${JSON.stringify(JOB_APPLICATION_STATUS_LABEL)} }`}
   >
     <AvContainer>
       <div
@@ -69,6 +66,40 @@ const statusLabel: Record<string, string> = {
           <template x-if="error">
             <p class="app-form-error" x-text="error"></p>
           </template>
+        </AvCard>
+
+        <div class="app-summary-grid">
+          <AvCard variant="soft">
+            <p class="av-text-soft">Total applications</p>
+            <h2 class="av-section-title"><span x-text="applications.length"></span></h2>
+          </AvCard>
+          <AvCard variant="soft">
+            <p class="av-text-soft">Interviews</p>
+            <h2 class="av-section-title"><span x-text="statusCounts.interview"></span></h2>
+          </AvCard>
+          <AvCard variant="soft">
+            <p class="av-text-soft">Offers</p>
+            <h2 class="av-section-title"><span x-text="statusCounts.offer"></span></h2>
+          </AvCard>
+          <AvCard variant="soft">
+            <p class="av-text-soft">Active pipeline</p>
+            <h2 class="av-section-title"><span x-text="activeCount"></span></h2>
+          </AvCard>
+        </div>
+
+        <AvCard variant="soft" className="av-auth-stack-sm">
+          <div class="av-row-between">
+            <h2 class="av-card-heading">Pipeline snapshot</h2>
+            <p class="av-text-soft"><span x-text="closedCount"></span> closed</p>
+          </div>
+          <div class="app-pipeline-grid">
+            {JOB_APPLICATION_STATUS.map((status) => (
+              <div class="av-card av-card-soft app-pipeline-item">
+                <p class="av-text-soft">{JOB_APPLICATION_STATUS_LABEL[status]}</p>
+                <p class="av-card-heading" x-text={`statusCounts.${status}`}></p>
+              </div>
+            ))}
+          </div>
         </AvCard>
 
         <AvCard variant="soft" className="av-auth-stack-md">
@@ -111,7 +142,7 @@ const statusLabel: Record<string, string> = {
                         class="app-input"
                       >
                         {JOB_APPLICATION_STATUS.map((status) => (
-                          <option value={status}>{statusLabel[status] ?? status}</option>
+                          <option value={status}>{JOB_APPLICATION_STATUS_LABEL[status] ?? status}</option>
                         ))}
                       </select>
                     </label>
@@ -156,7 +187,7 @@ const statusLabel: Record<string, string> = {
                 <span class="app-label">Status</span>
                 <select class="app-input" x-model="form.status">
                   {JOB_APPLICATION_STATUS.map((status) => (
-                    <option value={status}>{statusLabel[status] ?? status}</option>
+                    <option value={status}>{JOB_APPLICATION_STATUS_LABEL[status] ?? status}</option>
                   ))}
                 </select>
               </label>
@@ -205,7 +236,7 @@ const statusLabel: Record<string, string> = {
                 <span class="app-label">Status</span>
                 <select class="app-input" x-model="form.status">
                   {JOB_APPLICATION_STATUS.map((status) => (
-                    <option value={status}>{statusLabel[status] ?? status}</option>
+                    <option value={status}>{JOB_APPLICATION_STATUS_LABEL[status] ?? status}</option>
                   ))}
                 </select>
               </label>

@@ -1,9 +1,42 @@
 ---
-import { AvButton, AvCard, AvContainer } from "@ansiversa/components";
+import { AvButton, AvCard, AvContainer, AvEmptyState } from "@ansiversa/components";
+import { actions } from "astro:actions";
 import AppShell from "../layouts/AppShell.astro";
+import {
+  JOB_APPLICATION_STATUS,
+  JOB_APPLICATION_STATUS_LABEL,
+  type JobApplicationDTO,
+} from "../modules/job-applications/types";
 
 const title = "Job Tracker – Ansiversa";
-const description = "Track your job applications and interview progress in one focused workspace.";
+const description = "Track your job search pipeline from wishlist to accepted offer.";
+
+const result = await Astro.callAction(actions.jobApplications.fetchMyApplications, {
+  limit: 200,
+});
+const data = (result as any)?.data ?? (result as any) ?? {};
+const applications = (data?.applications ?? []) as JobApplicationDTO[];
+
+const statusCounts = applications.reduce(
+  (acc, application) => {
+    acc[application.status] += 1;
+    return acc;
+  },
+  {
+    wishlist: 0,
+    applied: 0,
+    interview: 0,
+    offer: 0,
+    rejected: 0,
+    accepted: 0,
+  } as Record<(typeof JOB_APPLICATION_STATUS)[number], number>,
+);
+
+const activeCount = statusCounts.wishlist + statusCounts.applied + statusCounts.interview + statusCounts.offer;
+const recentApplications = applications
+  .slice()
+  .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+  .slice(0, 5);
 ---
 
 <AppShell title={title} description={description}>
@@ -14,18 +47,86 @@ const description = "Track your job applications and interview progress in one f
           <div class="av-auth-stack-md">
             <div class="av-auth-stack-xs">
               <p class="av-kicker">Career Pipeline</p>
-              <h1 class="av-section-title">Track every application from wishlist to offer</h1>
+              <h1 class="av-section-title">Job Tracker</h1>
               <p class="av-text-soft">
-                Job Tracker helps you log applications, update status quickly, and keep your job search
-                organized without spreadsheet drift.
+                Track each application stage, spot momentum at a glance, and move from wishlist to accepted offer.
               </p>
             </div>
 
             <div class="av-row-wrap">
-              <AvButton href="/app/job-applications">Open Job Tracker</AvButton>
+              <AvButton href="/app/job-applications">View applications</AvButton>
+              <AvButton variant="ghost" href="/help">Help</AvButton>
             </div>
           </div>
         </AvCard>
+
+        {applications.length === 0 && (
+          <AvCard variant="soft" className="av-auth-stack-md">
+            <AvEmptyState
+              title="No applications yet"
+              description="Create your first application to start tracking your pipeline."
+            />
+            <div>
+              <AvButton href="/app/job-applications">Create first application</AvButton>
+            </div>
+          </AvCard>
+        )}
+
+        {applications.length > 0 && (
+          <>
+            <div class="app-home-summary-grid">
+              <AvCard variant="soft">
+                <p class="av-text-soft">Total applications</p>
+                <h2 class="av-section-title">{applications.length}</h2>
+              </AvCard>
+              <AvCard variant="soft">
+                <p class="av-text-soft">Interviews</p>
+                <h2 class="av-section-title">{statusCounts.interview}</h2>
+              </AvCard>
+              <AvCard variant="soft">
+                <p class="av-text-soft">Offers</p>
+                <h2 class="av-section-title">{statusCounts.offer}</h2>
+              </AvCard>
+              <AvCard variant="soft">
+                <p class="av-text-soft">Active pipeline</p>
+                <h2 class="av-section-title">{activeCount}</h2>
+              </AvCard>
+            </div>
+
+            <AvCard variant="soft" className="av-auth-stack-md">
+              <div class="av-row-between app-row-top">
+                <h2 class="av-card-heading">Pipeline overview</h2>
+                <p class="av-text-soft">{statusCounts.rejected + statusCounts.accepted} closed outcomes</p>
+              </div>
+              <div class="app-home-pipeline-grid">
+                {JOB_APPLICATION_STATUS.map((status) => (
+                  <div class="av-card av-card-soft app-home-pipeline-item">
+                    <p class="av-text-soft">{JOB_APPLICATION_STATUS_LABEL[status]}</p>
+                    <p class="av-card-heading">{statusCounts[status]}</p>
+                  </div>
+                ))}
+              </div>
+            </AvCard>
+
+            <AvCard variant="soft" className="av-auth-stack-md">
+              <div class="av-row-between app-row-top">
+                <h2 class="av-card-heading">Recent applications</h2>
+                <AvButton variant="ghost" href="/app/job-applications">Open full pipeline</AvButton>
+              </div>
+              <div class="av-auth-stack-xs">
+                {recentApplications.map((application) => (
+                  <div class="av-card av-card-soft app-home-recent-item">
+                    <div>
+                      <h3 class="av-card-heading">{application.companyName}</h3>
+                      <p class="av-text-soft">{application.roleTitle} · Applied {application.appliedDate}</p>
+                    </div>
+                    <span class="av-badge av-badge-soft">{JOB_APPLICATION_STATUS_LABEL[application.status]}</span>
+                  </div>
+                ))}
+              </div>
+            </AvCard>
+          </>
+        )}
       </div>
     </AvContainer>
   </section>

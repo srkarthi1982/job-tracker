@@ -1,6 +1,15 @@
-export const JOB_APPLICATION_STATUS = ["wishlist", "applied", "interview", "offer", "rejected"] as const;
+export const JOB_APPLICATION_STATUS = ["wishlist", "applied", "interview", "offer", "rejected", "accepted"] as const;
 
 export type JobApplicationStatus = (typeof JOB_APPLICATION_STATUS)[number];
+
+export const JOB_APPLICATION_STATUS_LABEL: Record<JobApplicationStatus, string> = {
+  wishlist: "Wishlist",
+  applied: "Applied",
+  interview: "Interview",
+  offer: "Offer",
+  rejected: "Rejected",
+  accepted: "Accepted",
+};
 
 export type JobApplicationDTO = {
   id: string;
