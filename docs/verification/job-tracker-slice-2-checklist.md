@@ -32,3 +32,7 @@
 ## Governance
 - [ ] `AGENTS.md` updated newest-first
 - [ ] Final report includes schema-change and deployment status
+
+## Freeze Status
+- Final review complete.
+- Job Tracker is approved and frozen.
