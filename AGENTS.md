@@ -28,6 +28,10 @@ This file complements the workspace-level Ansiversa-workspace/AGENTS.md (source 
 - Registry write deferred in Slice 1 (no parent write performed).
 
 ## Task Log (Recent)
+- 2026-03-10 Demo presentation data seeded (Job Tracker): inserted realistic remote records for the active existing user in `job_applications` (10 new applications) with matching `job_application_events` (30 new timeline events) across all pipeline statuses (`wishlist`, `applied`, `interview`, `offer`, `rejected`, `accepted`) so home/app summary metrics and pipeline breakdown render with production-like values for Astra presentation. No app code, UI, or schema changes.
+
+- 2026-03-10 Remote DB schema push executed for Job Tracker: ran `npm run db:push` (`astro db push --remote`) and applied pending remote schema updates successfully (`Push complete!`).
+
 - 2026-03-10 Mini app bar label fix (job-tracker): replaced slug-style mini-nav title rendering with the human-readable app name by introducing `APP_NAME = "Job Tracker"` in `src/app.meta.ts` and wiring `src/layouts/AppShell.astro` to pass `miniAppKey={APP_NAME}` to shared `WebLayout`, so the bar shows "Job Tracker" instead of "job-tracker". Verification: `npm run typecheck` ✅.
 
 ## 2026-03-10 - Job Tracker V1 Freeze
