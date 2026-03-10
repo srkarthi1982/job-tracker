@@ -2,6 +2,7 @@ import {
   createApplication,
   deleteApplication,
   fetchMyApplications,
+  generateApplicationAiAssist,
   updateApplication,
 } from "./jobApplications";
 
@@ -10,6 +11,7 @@ export const jobApplications = {
   createApplication,
   updateApplication,
   deleteApplication,
+  generateApplicationAiAssist,
 };
 
 export const server = {

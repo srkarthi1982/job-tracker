@@ -488,3 +488,29 @@
     grid-template-columns: 1fr;
   }
 }
+
+.app-ai-panel {
+  border-top: 1px dashed color-mix(in srgb, var(--av-border, #2b3f5c) 52%, transparent);
+  padding-top: 0.6rem;
+}
+
+.app-ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.app-ai-result {
+  border: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 52%, transparent);
+  border-radius: 0.75rem;
+  padding: 0.7rem;
+  background: color-mix(in srgb, var(--av-surface, #081024) 90%, transparent);
+}
+
+.app-ai-output {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  color: var(--av-text-strong, #eaf2ff);
+  line-height: 1.45;
+}

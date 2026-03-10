@@ -13,7 +13,17 @@ import {
   toDbDate,
   toOptionalDbDate,
 } from "../modules/job-applications/helpers";
-import { JOB_APPLICATION_EVENT_TYPE, JOB_APPLICATION_STATUS, type JobApplicationStatus } from "../modules/job-applications/types";
+import {
+  buildApplicationAiResult,
+  getAiGuardrailMessage,
+} from "../modules/job-applications/aiAssistant";
+import {
+  JOB_APPLICATION_AI_ACTIONS,
+  JOB_APPLICATION_EVENT_TYPE,
+  JOB_APPLICATION_STATUS,
+  type JobApplicationAiAction,
+  type JobApplicationStatus,
+} from "../modules/job-applications/types";
 import { buildJobTrackerSummary } from "../dashboard/summary.schema";
 import { pushJobTrackerActivity } from "../lib/pushActivity";
 
@@ -35,6 +45,11 @@ const applicationPayloadSchema = z.object({
 
 const listSchema = z.object({
   limit: z.number().int().min(1).max(250).default(200),
+});
+
+const aiAssistSchema = z.object({
+  applicationId: z.string().min(1),
+  action: z.enum(JOB_APPLICATION_AI_ACTIONS),
 });
 
 const normalizePayload = (input: z.infer<typeof applicationPayloadSchema>) => {
@@ -342,5 +357,35 @@ export const deleteApplication = defineAction({
     void pushSummaryActivity(user.id, "jobApplications.deleted", id);
 
     return { success: true };
+  },
+});
+
+export const generateApplicationAiAssist = defineAction({
+  input: aiAssistSchema,
+  async handler({ applicationId, action }, context: ActionAPIContext) {
+    const user = requireUser(context);
+
+    const rows = await db
+      .select()
+      .from(job_applications)
+      .where(eq(job_applications.id, applicationId))
+      .limit(1);
+
+    if (!rows[0] || rows[0].userId !== user.id) {
+      throw new ActionError({ code: "NOT_FOUND", message: "Application not found" });
+    }
+
+    const rowsWithEvents = await withEvents(user.id, rows);
+    const application = normalizeJobApplication(rowsWithEvents[0]);
+    const preset = action as JobApplicationAiAction;
+
+    const guardrailMessage = getAiGuardrailMessage(preset, application);
+    if (guardrailMessage) {
+      throw new ActionError({ code: "BAD_REQUEST", message: guardrailMessage });
+    }
+
+    return {
+      result: buildApplicationAiResult(preset, application),
+    };
   },
 });
