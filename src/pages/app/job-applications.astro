@@ -117,9 +117,27 @@ const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
         </AvCard>
 
         <AvCard variant="soft" className="av-auth-stack-md">
-          <div class="av-row-between">
-            <h2 class="av-card-heading">Applications</h2>
-            <p class="av-text-soft"><span x-text="visibleApplications.length"></span> shown · <span x-text="applications.length"></span> total</p>
+          <div class="av-row-between app-views-header">
+            <div>
+              <h2 class="av-card-heading">Applications</h2>
+              <p class="av-text-soft"><span x-text="visibleApplications.length"></span> shown · <span x-text="applications.length"></span> total</p>
+            </div>
+            <div class="app-view-switch" role="tablist" aria-label="Applications view">
+              <button
+                type="button"
+                class="app-view-switch-btn"
+                :class="{ 'is-active': activeView === 'board' }"
+                @click="setView('board')"
+                :aria-selected="activeView === 'board'"
+              >Board view</button>
+              <button
+                type="button"
+                class="app-view-switch-btn"
+                :class="{ 'is-active': activeView === 'timeline' }"
+                @click="setView('timeline')"
+                :aria-selected="activeView === 'timeline'"
+              >Timeline view</button>
+            </div>
           </div>
 
           <div class="app-filter-grid">
@@ -174,122 +192,161 @@ const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
             </div>
           </template>
 
-          <template x-if="visibleApplications.length > 0">
-            <div class="av-auth-stack-sm">
-              <template x-for="application in visibleApplications" :key="application.id">
-                <div class="av-card av-card-soft app-application-card av-auth-stack-xs">
-                  <div class="av-row-between app-row-top">
-                    <div>
-                      <h3 class="av-card-heading" x-text="application.companyName"></h3>
-                      <p class="app-role-line"><span x-text="application.roleTitle"></span></p>
-                    </div>
-                    <span class="av-badge av-badge-soft">
-                      <span x-text="statusLabel[application.status] || application.status"></span>
-                    </span>
+          <template x-if="visibleApplications.length > 0 && activeView === 'board'">
+            <div class="app-board-grid">
+              <template x-for="group in boardGroups" :key="group.status">
+                <section class="av-card av-card-soft app-board-column av-auth-stack-xs">
+                  <div class="av-row-between app-board-column-head">
+                    <h3 class="app-subheading" x-text="group.label"></h3>
+                    <span class="av-text-soft" x-text="`${group.applications.length}`"></span>
                   </div>
+                  <template x-if="group.applications.length === 0">
+                    <p class="av-text-soft">No applications in this stage.</p>
+                  </template>
+                  <template x-if="group.applications.length > 0">
+                    <div class="av-auth-stack-xs">
+                      <template x-for="application in group.applications" :key="application.id">
+                        <div class="av-card app-board-item av-auth-stack-xs">
+                          <div class="av-row-between app-row-top">
+                            <div>
+                              <h4 class="app-subheading" x-text="application.companyName"></h4>
+                              <p class="app-role-line"><span x-text="application.roleTitle"></span></p>
+                            </div>
+                            <span class="av-badge av-badge-soft">
+                              <span x-text="statusLabel[application.status] || application.status"></span>
+                            </span>
+                          </div>
 
-                  <p class="av-text-soft">Applied on <span class="app-date-text" x-text="application.appliedDate"></span></p>
+                          <p class="av-text-soft">Applied on <span class="app-date-text" x-text="application.appliedDate"></span></p>
 
-                  <div class="app-meta-grid">
-                    <label class="app-inline-field">
-                      <span class="av-text-soft">Status</span>
-                      <select
-                        :value="application.status"
-                        @change="quickUpdateStatus(application.id, $event.target.value)"
-                        :disabled="loading"
-                        class="app-input"
-                      >
-                        {JOB_APPLICATION_STATUS.map((status) => (
-                          <option value={status}>{JOB_APPLICATION_STATUS_LABEL[status] ?? status}</option>
-                        ))}
-                      </select>
-                    </label>
+                          <div class="app-meta-grid">
+                            <label class="app-inline-field">
+                              <span class="av-text-soft">Status</span>
+                              <select
+                                :value="application.status"
+                                @change="quickUpdateStatus(application.id, $event.target.value)"
+                                :disabled="loading"
+                                class="app-input"
+                              >
+                                {JOB_APPLICATION_STATUS.map((status) => (
+                                  <option value={status}>{JOB_APPLICATION_STATUS_LABEL[status] ?? status}</option>
+                                ))}
+                              </select>
+                            </label>
 
-                    <div class="app-meta-points">
-                      <template x-if="application.nextActionDate">
-                        <p class="av-text-soft">Next action: <strong x-text="application.nextActionLabel || 'Follow up'"></strong> by <span x-text="application.nextActionDate"></span></p>
-                      </template>
-                      <template x-if="application.interviewDate">
-                        <p class="av-text-soft">Interview date: <span x-text="application.interviewDate"></span></p>
-                      </template>
-                      <template x-if="application.lastContactDate">
-                        <p class="av-text-soft">Last contact: <span x-text="application.lastContactDate"></span></p>
-                      </template>
-                      <template x-if="application.location">
-                        <p class="av-text-soft">Location: <span x-text="application.location"></span></p>
-                      </template>
-                      <template x-if="application.jobUrl">
-                        <p class="av-text-soft">
-                          Listing: <a class="app-link" :href="application.jobUrl" target="_blank" rel="noreferrer">Open job URL</a>
-                        </p>
-                      </template>
-                    </div>
+                            <div class="app-meta-points">
+                              <template x-if="application.nextActionDate">
+                                <p class="av-text-soft">Next action: <strong x-text="application.nextActionLabel || 'Follow up'"></strong> by <span x-text="application.nextActionDate"></span></p>
+                              </template>
+                              <template x-if="application.interviewDate">
+                                <p class="av-text-soft">Interview: <span x-text="application.interviewDate"></span></p>
+                              </template>
+                              <template x-if="application.location">
+                                <p class="av-text-soft">Location: <span x-text="application.location"></span></p>
+                              </template>
+                              <template x-if="application.jobUrl">
+                                <p class="av-text-soft">
+                                  Listing: <a class="app-link" :href="application.jobUrl" target="_blank" rel="noreferrer">Open job URL</a>
+                                </p>
+                              </template>
+                            </div>
 
-                    <template x-if="application.notes">
-                      <p class="av-text-soft app-notes">Notes: <span x-text="application.notes"></span></p>
-                    </template>
-                  </div>
-
-                  <div class="av-row-wrap">
-                    <AvButton type="button" variant="ghost" @click="toggleTimeline(application.id)" :disabled="loading">
-                      <span x-text="isTimelineExpanded(application.id) ? 'Hide history' : 'View history'"></span>
-                    </AvButton>
-                    <AvButton type="button" variant="ghost" @click="toggleAiPanel(application.id)" :disabled="loading || aiState(application.id).loading">
-                      <span x-text="aiState(application.id).open ? 'Hide AI assist' : 'AI Assist'"></span>
-                    </AvButton>
-                    <AvButton type="button" variant="ghost" @click="openEdit(application)" :disabled="loading">Edit</AvButton>
-                    <AvButton type="button" variant="ghost" @click="deleteApplication(application.id)" :disabled="loading">Delete</AvButton>
-                  </div>
-
-                  <div class="app-ai-panel av-auth-stack-xs" x-show="aiState(application.id).open">
-                    <div class="av-row-between">
-                      <h4 class="app-subheading">AI follow-up assistant</h4>
-                      <p class="av-text-soft" x-show="aiState(application.id).result" x-text="`Updated ${new Date(aiState(application.id).result.generatedAt).toLocaleString()}`"></p>
-                    </div>
-                    <p class="av-text-soft">Choose a practical preset tied to this application.</p>
-                    <div class="app-ai-actions">
-                      <template x-for="action in aiActions" :key="`${application.id}-${action}`">
-                        <AvButton
-                          type="button"
-                          variant="ghost"
-                          @click="runAiAction(application.id, action)"
-                          :disabled="aiState(application.id).loading"
-                        >
-                          <span x-text="aiActionLabel(action)"></span>
-                        </AvButton>
-                      </template>
-                    </div>
-                    <p class="app-form-error" x-show="aiState(application.id).error" x-text="aiState(application.id).error"></p>
-                    <div class="app-ai-result av-auth-stack-xs" x-show="aiState(application.id).result">
-                      <p class="app-timeline-label" x-text="aiState(application.id).result?.title"></p>
-                      <pre class="app-ai-output" x-text="aiState(application.id).result?.output"></pre>
-                      <div class="av-row-wrap">
-                        <AvButton type="button" variant="ghost" @click="copyAiOutput(application.id)">Copy</AvButton>
-                        <AvButton type="button" variant="ghost" @click="regenerateAiAction(application.id)" :disabled="aiState(application.id).loading || !aiState(application.id).lastAction">Regenerate</AvButton>
-                      </div>
-                    </div>
-                    <p class="av-text-soft" x-show="aiState(application.id).loading">Generating suggestion…</p>
-                  </div>
-
-                  <div class="app-timeline" x-show="isTimelineExpanded(application.id)">
-                    <h4 class="app-subheading">Timeline</h4>
-                    <template x-if="application.events.length === 0">
-                      <p class="av-text-soft">No history yet for this application.</p>
-                    </template>
-                    <template x-if="application.events.length > 0">
-                      <div class="av-auth-stack-xs">
-                        <template x-for="event in application.events" :key="event.id">
-                          <div class="app-timeline-item">
-                            <p class="app-timeline-label" x-text="event.eventLabel"></p>
-                            <p class="av-text-soft"><span x-text="event.eventDate"></span></p>
-                            <template x-if="event.notes">
-                              <p class="av-text-soft" x-text="event.notes"></p>
+                            <template x-if="application.notes">
+                              <p class="av-text-soft app-notes">Notes: <span x-text="application.notes"></span></p>
                             </template>
                           </div>
-                        </template>
-                      </div>
-                    </template>
-                  </div>
+
+                          <div class="av-row-wrap">
+                            <AvButton type="button" variant="ghost" @click="toggleTimeline(application.id)" :disabled="loading">
+                              <span x-text="isTimelineExpanded(application.id) ? 'Hide history' : 'View history'"></span>
+                            </AvButton>
+                            <AvButton type="button" variant="ghost" @click="toggleAiPanel(application.id)" :disabled="loading || aiState(application.id).loading">
+                              <span x-text="aiState(application.id).open ? 'Hide AI assist' : 'AI Assist'"></span>
+                            </AvButton>
+                            <AvButton type="button" variant="ghost" @click="openEdit(application)" :disabled="loading">Edit</AvButton>
+                            <AvButton type="button" variant="ghost" @click="deleteApplication(application.id)" :disabled="loading">Delete</AvButton>
+                          </div>
+
+                          <div class="app-ai-panel av-auth-stack-xs" x-show="aiState(application.id).open">
+                            <div class="av-row-between">
+                              <h4 class="app-subheading">AI follow-up assistant</h4>
+                              <p class="av-text-soft" x-show="aiState(application.id).result" x-text="`Updated ${new Date(aiState(application.id).result.generatedAt).toLocaleString()}`"></p>
+                            </div>
+                            <p class="av-text-soft">Choose a practical preset tied to this application.</p>
+                            <div class="app-ai-actions">
+                              <template x-for="action in aiActions" :key="`${application.id}-${action}`">
+                                <AvButton
+                                  type="button"
+                                  variant="ghost"
+                                  @click="runAiAction(application.id, action)"
+                                  :disabled="aiState(application.id).loading"
+                                >
+                                  <span x-text="aiActionLabel(action)"></span>
+                                </AvButton>
+                              </template>
+                            </div>
+                            <p class="app-form-error" x-show="aiState(application.id).error" x-text="aiState(application.id).error"></p>
+                            <div class="app-ai-result av-auth-stack-xs" x-show="aiState(application.id).result">
+                              <p class="app-timeline-label" x-text="aiState(application.id).result?.title"></p>
+                              <pre class="app-ai-output" x-text="aiState(application.id).result?.output"></pre>
+                              <div class="av-row-wrap">
+                                <AvButton type="button" variant="ghost" @click="copyAiOutput(application.id)">Copy</AvButton>
+                                <AvButton type="button" variant="ghost" @click="regenerateAiAction(application.id)" :disabled="aiState(application.id).loading || !aiState(application.id).lastAction">Regenerate</AvButton>
+                              </div>
+                            </div>
+                            <p class="av-text-soft" x-show="aiState(application.id).loading">Generating suggestion…</p>
+                          </div>
+
+                          <div class="app-timeline" x-show="isTimelineExpanded(application.id)">
+                            <h4 class="app-subheading">Timeline</h4>
+                            <template x-if="application.events.length === 0">
+                              <p class="av-text-soft">No history yet for this application.</p>
+                            </template>
+                            <template x-if="application.events.length > 0">
+                              <div class="av-auth-stack-xs">
+                                <template x-for="event in application.events" :key="event.id">
+                                  <div class="app-timeline-item">
+                                    <p class="app-timeline-label" x-text="event.eventLabel"></p>
+                                    <p class="av-text-soft"><span x-text="event.eventDate"></span></p>
+                                    <template x-if="event.notes">
+                                      <p class="av-text-soft" x-text="event.notes"></p>
+                                    </template>
+                                  </div>
+                                </template>
+                              </div>
+                            </template>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                </section>
+              </template>
+            </div>
+          </template>
+
+          <template x-if="visibleApplications.length > 0 && activeView === 'timeline'">
+            <div class="app-main-timeline av-auth-stack-xs">
+              <template x-if="timelineItems.length === 0">
+                <div class="app-filter-empty av-auth-stack-xs">
+                  <AvEmptyState
+                    title="No timeline events yet"
+                    description="Update an application, schedule an interview, or log a contact to build your activity timeline."
+                  />
+                </div>
+              </template>
+              <template x-if="timelineItems.length > 0">
+                <div class="av-auth-stack-xs">
+                  <template x-for="item in timelineItems" :key="item.id">
+                    <article class="app-main-timeline-item">
+                      <p class="app-main-timeline-date" x-text="formatTimelineDate(item.date)"></p>
+                      <p class="app-timeline-label" x-text="item.label"></p>
+                      <p class="av-text-soft"><strong x-text="item.companyName"></strong> · <span x-text="item.roleTitle"></span></p>
+                      <template x-if="item.notes">
+                        <p class="av-text-soft" x-text="item.notes"></p>
+                      </template>
+                    </article>
+                  </template>
                 </div>
               </template>
             </div>

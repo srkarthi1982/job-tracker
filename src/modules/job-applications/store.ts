@@ -2,13 +2,36 @@ import type { Alpine } from "alpinejs";
 import { actions } from "astro:actions";
 import { AvBaseStore } from "@ansiversa/components/alpine";
 import {
+  JOB_APPLICATION_STATUS,
+  JOB_APPLICATION_STATUS_LABEL,
   JOB_APPLICATION_AI_ACTION_LABEL,
   type JobApplicationAiAction,
   type JobApplicationAiResultDTO,
   type JobApplicationDTO,
+  type JobApplicationEventDTO,
   type JobApplicationForm,
   type JobApplicationStatus,
 } from "./types";
+
+type JobApplicationsView = "board" | "timeline";
+
+type JobApplicationBoardGroup = {
+  status: JobApplicationStatus;
+  label: string;
+  applications: JobApplicationDTO[];
+};
+
+type JobApplicationTimelineItem = {
+  id: string;
+  applicationId: string;
+  companyName: string;
+  roleTitle: string;
+  label: string;
+  date: string;
+  notes: string | null;
+  source: "event" | "application";
+  sortTime: number;
+};
 
 export type JobApplicationSortOption =
   | "updatedDesc"
@@ -57,6 +80,7 @@ export class JobApplicationsStore extends AvBaseStore {
   statusFilter: "all" | JobApplicationStatus = "all";
   searchQuery = "";
   sortBy: JobApplicationSortOption = "updatedDesc";
+  activeView: JobApplicationsView = "board";
   form: JobApplicationForm = defaultForm();
   editingId: string | null = null;
   loading = false;
@@ -113,6 +137,73 @@ export class JobApplicationsStore extends AvBaseStore {
 
   get hasActiveFilters() {
     return this.statusFilter !== "all" || this.searchQuery.trim().length > 0;
+  }
+
+  get boardGroups() {
+    return JOB_APPLICATION_STATUS.map<JobApplicationBoardGroup>((status) => ({
+      status,
+      label: JOB_APPLICATION_STATUS_LABEL[status],
+      applications: this.visibleApplications.filter((application) => application.status === status),
+    }));
+  }
+
+  get timelineItems() {
+    const items: JobApplicationTimelineItem[] = [];
+
+    for (const application of this.visibleApplications) {
+      items.push(this.applicationCreatedTimelineItem(application));
+
+      for (const event of application.events) {
+        items.push(this.eventTimelineItem(application, event));
+      }
+    }
+
+    return items.sort((left, right) => right.sortTime - left.sortTime);
+  }
+
+  setView(view: JobApplicationsView) {
+    this.activeView = view;
+  }
+
+  formatTimelineDate(date: string) {
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return date;
+    return parsed.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  private timelineSortTime(date: string, fallbackDate: string) {
+    const value = new Date(date).getTime();
+    if (!Number.isNaN(value)) return value;
+    const fallback = new Date(fallbackDate).getTime();
+    return Number.isNaN(fallback) ? 0 : fallback;
+  }
+
+  private applicationCreatedTimelineItem(application: JobApplicationDTO): JobApplicationTimelineItem {
+    return {
+      id: `created-${application.id}`,
+      applicationId: application.id,
+      companyName: application.companyName,
+      roleTitle: application.roleTitle,
+      label: "Application added",
+      date: application.appliedDate,
+      notes: application.notes,
+      source: "application",
+      sortTime: this.timelineSortTime(application.appliedDate, application.createdAt),
+    };
+  }
+
+  private eventTimelineItem(application: JobApplicationDTO, event: JobApplicationEventDTO): JobApplicationTimelineItem {
+    return {
+      id: event.id,
+      applicationId: application.id,
+      companyName: application.companyName,
+      roleTitle: application.roleTitle,
+      label: event.eventLabel,
+      date: event.eventDate,
+      notes: event.notes,
+      source: "event",
+      sortTime: this.timelineSortTime(event.eventDate, event.createdAt),
+    };
   }
 
   get statusCounts() {
