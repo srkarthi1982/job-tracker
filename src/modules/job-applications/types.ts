@@ -46,6 +46,9 @@ export type JobApplicationDTO = {
   nextActionLabel: string | null;
   lastContactDate: string | null;
   interviewDate: string | null;
+  jobDescription: string | null;
+  resumeSnapshotText: string | null;
+  resumeLabel: string | null;
   notes: string | null;
   events: JobApplicationEventDTO[];
   createdAt: string;
@@ -63,7 +66,19 @@ export type JobApplicationForm = {
   nextActionLabel: string;
   lastContactDate: string;
   interviewDate: string;
+  jobDescription: string;
+  resumeSnapshotText: string;
+  resumeLabel: string;
   notes: string;
+};
+
+export type JobMatchIntelligenceResultDTO = {
+  matchScore: number;
+  missingSkills: string[];
+  strongMatches: string[];
+  improvementSuggestions: string[];
+  summary: string;
+  generatedAt: string;
 };
 
 

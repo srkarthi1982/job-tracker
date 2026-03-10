@@ -251,6 +251,12 @@ const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
                               </template>
                             </div>
 
+                            <template x-if="application.jobDescription">
+                              <p class="av-text-soft app-notes">Job description added</p>
+                            </template>
+                            <template x-if="application.resumeSnapshotText">
+                              <p class="av-text-soft app-notes">Resume snapshot: <span x-text="application.resumeLabel || 'Manual snapshot'"></span></p>
+                            </template>
                             <template x-if="application.notes">
                               <p class="av-text-soft app-notes">Notes: <span x-text="application.notes"></span></p>
                             </template>
@@ -262,6 +268,9 @@ const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
                             </AvButton>
                             <AvButton type="button" variant="ghost" @click="toggleAiPanel(application.id)" :disabled="loading || aiState(application.id).loading">
                               <span x-text="aiState(application.id).open ? 'Hide AI assist' : 'AI Assist'"></span>
+                            </AvButton>
+                            <AvButton type="button" variant="ghost" @click="toggleMatchPanel(application.id)" :disabled="loading || matchState(application.id).loading">
+                              <span x-text="matchState(application.id).open ? 'Hide resume match' : 'Resume match'"></span>
                             </AvButton>
                             <AvButton type="button" variant="ghost" @click="openEdit(application)" :disabled="loading">Edit</AvButton>
                             <AvButton type="button" variant="ghost" @click="deleteApplication(application.id)" :disabled="loading">Delete</AvButton>
@@ -295,6 +304,51 @@ const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
                               </div>
                             </div>
                             <p class="av-text-soft" x-show="aiState(application.id).loading">Generating suggestion…</p>
+                          </div>
+
+                          <div class="app-match-panel av-auth-stack-xs" x-show="matchState(application.id).open">
+                            <div class="av-row-between">
+                              <h4 class="app-subheading">Resume → Job match intelligence</h4>
+                              <p class="av-text-soft" x-show="matchState(application.id).result" x-text="`Updated ${new Date(matchState(application.id).result.generatedAt).toLocaleString()}`"></p>
+                            </div>
+                            <p class="av-text-soft">Analyze resume fit against this application&apos;s job description.</p>
+                            <p class="app-form-error" x-show="matchState(application.id).error" x-text="matchState(application.id).error"></p>
+                            <div class="av-row-wrap">
+                              <AvButton type="button" variant="ghost" @click="runMatchAnalysis(application.id)" :disabled="matchState(application.id).loading">Analyze match</AvButton>
+                              <AvButton type="button" variant="ghost" @click="runMatchAnalysis(application.id)" :disabled="matchState(application.id).loading || !matchState(application.id).result">Regenerate</AvButton>
+                              <AvButton type="button" variant="ghost" @click="copyMatchOutput(application.id)" :disabled="!matchState(application.id).result">Copy</AvButton>
+                            </div>
+                            <p class="av-text-soft" x-show="matchState(application.id).loading">Generating match analysis…</p>
+                            <div class="app-match-result av-auth-stack-xs" x-show="matchState(application.id).result">
+                              <p class="app-match-score"><span x-text="`${matchState(application.id).result?.matchScore}%`"></span></p>
+                              <p class="av-text-soft" x-text="matchState(application.id).result?.summary"></p>
+                              <div class="app-match-grid">
+                                <div>
+                                  <p class="app-timeline-label">Strong matches</p>
+                                  <ul class="app-match-list">
+                                    <template x-for="item in (matchState(application.id).result?.strongMatches || [])" :key="`strong-${application.id}-${item}`">
+                                      <li x-text="item"></li>
+                                    </template>
+                                  </ul>
+                                </div>
+                                <div>
+                                  <p class="app-timeline-label">Missing skills</p>
+                                  <ul class="app-match-list">
+                                    <template x-for="item in (matchState(application.id).result?.missingSkills || [])" :key="`missing-${application.id}-${item}`">
+                                      <li x-text="item"></li>
+                                    </template>
+                                  </ul>
+                                </div>
+                              </div>
+                              <div>
+                                <p class="app-timeline-label">Improvement suggestions</p>
+                                <ul class="app-match-list">
+                                  <template x-for="item in (matchState(application.id).result?.improvementSuggestions || [])" :key="`suggest-${application.id}-${item}`">
+                                    <li x-text="item"></li>
+                                  </template>
+                                </ul>
+                              </div>
+                            </div>
                           </div>
 
                           <div class="app-timeline" x-show="isTimelineExpanded(application.id)">
@@ -412,6 +466,24 @@ const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
             </div>
 
             <div class="app-form-group av-auth-stack-xs">
+              <h3 class="app-subheading">Job details + resume snapshot</h3>
+              <div class="app-form-grid">
+                <label class="app-field app-field-wide">
+                  <span class="app-label">Job description</span>
+                  <textarea class="app-input" x-model="form.jobDescription" rows="5" maxlength="12000" placeholder="Paste the job description for match analysis"></textarea>
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Resume label (optional)</span>
+                  <input class="app-input" type="text" x-model="form.resumeLabel" maxlength="120" placeholder="Main SWE Resume" />
+                </label>
+                <label class="app-field app-field-wide">
+                  <span class="app-label">Resume snapshot text</span>
+                  <textarea class="app-input" x-model="form.resumeSnapshotText" rows="5" maxlength="12000" placeholder="Paste a plain-text resume snapshot"></textarea>
+                </label>
+              </div>
+            </div>
+
+            <div class="app-form-group av-auth-stack-xs">
               <h3 class="app-subheading">Notes</h3>
               <label class="app-field">
                 <span class="app-label">Notes</span>
@@ -485,6 +557,24 @@ const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
                 <label class="app-field">
                   <span class="app-label">Next action label</span>
                   <input class="app-input" type="text" x-model="form.nextActionLabel" maxlength="120" placeholder="Follow up" />
+                </label>
+              </div>
+            </div>
+
+            <div class="app-form-group av-auth-stack-xs">
+              <h3 class="app-subheading">Job details + resume snapshot</h3>
+              <div class="app-form-grid">
+                <label class="app-field app-field-wide">
+                  <span class="app-label">Job description</span>
+                  <textarea class="app-input" x-model="form.jobDescription" rows="5" maxlength="12000" placeholder="Paste the job description for match analysis"></textarea>
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Resume label (optional)</span>
+                  <input class="app-input" type="text" x-model="form.resumeLabel" maxlength="120" placeholder="Main SWE Resume" />
+                </label>
+                <label class="app-field app-field-wide">
+                  <span class="app-label">Resume snapshot text</span>
+                  <textarea class="app-input" x-model="form.resumeSnapshotText" rows="5" maxlength="12000" placeholder="Paste a plain-text resume snapshot"></textarea>
                 </label>
               </div>
             </div>
