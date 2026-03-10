@@ -1,4 +1,11 @@
-import { JOB_APPLICATION_STATUS, type JobApplicationDTO, type JobApplicationStatus } from "./types";
+import {
+  JOB_APPLICATION_EVENT_TYPE,
+  JOB_APPLICATION_STATUS,
+  type JobApplicationDTO,
+  type JobApplicationEventDTO,
+  type JobApplicationEventType,
+  type JobApplicationStatus,
+} from "./types";
 
 const toIso = (value?: string | Date | null) => {
   if (!value) return new Date().toISOString();
@@ -22,6 +29,11 @@ export const normalizeStatus = (value?: string | null): JobApplicationStatus => 
   return JOB_APPLICATION_STATUS.includes(normalized) ? normalized : "wishlist";
 };
 
+export const normalizeEventType = (value?: string | null): JobApplicationEventType => {
+  const normalized = normalizeText(value) as JobApplicationEventType;
+  return JOB_APPLICATION_EVENT_TYPE.includes(normalized) ? normalized : "noteAdded";
+};
+
 export const normalizeDateInput = (value?: string | Date | null): string => {
   if (value instanceof Date) {
     return value.toISOString().slice(0, 10);
@@ -35,7 +47,31 @@ export const normalizeDateInput = (value?: string | Date | null): string => {
   return parsed.toISOString().slice(0, 10);
 };
 
+export const normalizeOptionalDateInput = (value?: string | Date | null): string | null => {
+  const next = normalizeText(typeof value === "string" ? value : value?.toString());
+  if (!next) return null;
+  const parsed = new Date(next);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().slice(0, 10);
+};
+
 export const toDbDate = (value: string) => new Date(`${normalizeDateInput(value)}T00:00:00.000Z`);
+
+export const toOptionalDbDate = (value?: string | null) => {
+  const normalized = normalizeOptionalDateInput(value ?? null);
+  return normalized ? new Date(`${normalized}T00:00:00.000Z`) : null;
+};
+
+export const normalizeJobApplicationEvent = (row: any): JobApplicationEventDTO => ({
+  id: String(row.id),
+  applicationId: String(row.applicationId),
+  userId: String(row.userId),
+  eventType: normalizeEventType(row.eventType),
+  eventLabel: String(row.eventLabel ?? ""),
+  eventDate: normalizeDateInput(row.eventDate),
+  notes: normalizeOptionalText(row.notes),
+  createdAt: toIso(row.createdAt),
+});
 
 export const normalizeJobApplication = (row: any): JobApplicationDTO => ({
   id: String(row.id),
@@ -46,7 +82,12 @@ export const normalizeJobApplication = (row: any): JobApplicationDTO => ({
   appliedDate: normalizeDateInput(row.appliedDate),
   jobUrl: normalizeOptionalText(row.jobUrl),
   location: normalizeOptionalText(row.location),
+  nextActionDate: normalizeOptionalDateInput(row.nextActionDate),
+  nextActionLabel: normalizeOptionalText(row.nextActionLabel),
+  lastContactDate: normalizeOptionalDateInput(row.lastContactDate),
+  interviewDate: normalizeOptionalDateInput(row.interviewDate),
   notes: normalizeOptionalText(row.notes),
+  events: Array.isArray(row.events) ? row.events.map(normalizeJobApplicationEvent) : [],
   createdAt: toIso(row.createdAt),
   updatedAt: toIso(row.updatedAt),
 });
