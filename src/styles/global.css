@@ -82,6 +82,35 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.app-views-header {
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.app-view-switch {
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 70%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--av-surface, #081024) 88%, transparent);
+}
+
+.app-view-switch-btn {
+  border: 0;
+  background: transparent;
+  color: var(--av-text-soft, #9fb0c7);
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.55rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.app-view-switch-btn.is-active {
+  background: color-mix(in srgb, var(--av-primary, #58c9ff) 24%, transparent);
+  color: var(--av-text-strong, #eaf2ff);
+}
+
 .app-filter-empty {
   border: 1px dashed color-mix(in srgb, var(--av-border, #2b3f5c) 72%, transparent);
   border-radius: 0.85rem;
@@ -90,6 +119,44 @@
 
 .app-application-card {
   gap: 0.6rem;
+}
+
+.app-board-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.app-board-column {
+  padding: 0.72rem;
+}
+
+.app-board-column-head {
+  border-bottom: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 45%, transparent);
+  padding-bottom: 0.45rem;
+}
+
+.app-board-item {
+  border: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 55%, transparent);
+  background: color-mix(in srgb, var(--av-surface, #081024) 86%, transparent);
+  padding: 0.65rem;
+}
+
+.app-main-timeline {
+  border: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 52%, transparent);
+  border-radius: 0.9rem;
+  padding: 0.8rem;
+}
+
+.app-main-timeline-item {
+  border-left: 2px solid color-mix(in srgb, var(--av-primary, #58c9ff) 45%, transparent);
+  padding: 0.15rem 0 0.15rem 0.75rem;
+}
+
+.app-main-timeline-date {
+  margin: 0;
+  color: var(--av-primary, #58c9ff);
+  font-size: 0.82rem;
 }
 
 .app-role-line {
@@ -400,6 +467,18 @@
   }
 
   .app-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-view-switch {
+    width: 100%;
+  }
+
+  .app-view-switch-btn {
+    flex: 1;
+  }
+
+  .app-board-grid {
     grid-template-columns: 1fr;
   }
 
