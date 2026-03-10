@@ -16,6 +16,8 @@ import {
   type JobApplicationDTO,
 } from "../../modules/job-applications/types";
 
+const FILTERABLE_STATUS = ["all", ...JOB_APPLICATION_STATUS] as const;
+
 const title = "Job Applications – Job Tracker";
 const description = "Manage your job application pipeline.";
 
@@ -105,7 +107,39 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
         <AvCard variant="soft" className="av-auth-stack-md">
           <div class="av-row-between">
             <h2 class="av-card-heading">Applications</h2>
-            <p class="av-text-soft"><span x-text="applications.length"></span> total</p>
+            <p class="av-text-soft"><span x-text="visibleApplications.length"></span> shown · <span x-text="applications.length"></span> total</p>
+          </div>
+
+          <div class="app-filter-grid">
+            <label class="app-field">
+              <span class="app-label">Status</span>
+              <select class="app-input" x-model="statusFilter">
+                {FILTERABLE_STATUS.map((status) => (
+                  <option value={status}>
+                    {status === "all" ? "All statuses" : JOB_APPLICATION_STATUS_LABEL[status]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label class="app-field">
+              <span class="app-label">Search</span>
+              <input
+                class="app-input"
+                type="text"
+                x-model="searchQuery"
+                placeholder="Company, role, or location"
+              />
+            </label>
+            <label class="app-field">
+              <span class="app-label">Sort</span>
+              <select class="app-input" x-model="sortBy">
+                <option value="updatedDesc">Newest updated</option>
+                <option value="updatedAsc">Oldest updated</option>
+                <option value="appliedDesc">Applied date (newest first)</option>
+                <option value="appliedAsc">Applied date (oldest first)</option>
+                <option value="companyAsc">Company name (A–Z)</option>
+              </select>
+            </label>
           </div>
 
           <template x-if="applications.length === 0">
@@ -115,22 +149,33 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
             />
           </template>
 
-          <template x-if="applications.length > 0">
+          <template x-if="applications.length > 0 && visibleApplications.length === 0">
+            <div class="app-filter-empty av-auth-stack-xs">
+              <AvEmptyState
+                title="No applications match current filters"
+                description="Try a different status, broaden your search, or reset filters."
+              />
+              <div class="av-row-wrap">
+                <AvButton type="button" variant="ghost" @click="resetFilters" :disabled="!hasActiveFilters">Reset filters</AvButton>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="visibleApplications.length > 0">
             <div class="av-auth-stack-sm">
-              <template x-for="application in applications" :key="application.id">
-                <div class="av-card av-card-soft av-auth-stack-xs">
+              <template x-for="application in visibleApplications" :key="application.id">
+                <div class="av-card av-card-soft app-application-card av-auth-stack-xs">
                   <div class="av-row-between app-row-top">
                     <div>
                       <h3 class="av-card-heading" x-text="application.companyName"></h3>
-                      <p class="av-text-soft">
-                        <span x-text="application.roleTitle"></span>
-                        · Applied <span x-text="application.appliedDate"></span>
-                      </p>
+                      <p class="app-role-line"><span x-text="application.roleTitle"></span></p>
                     </div>
                     <span class="av-badge av-badge-soft">
                       <span x-text="statusLabel[application.status] || application.status"></span>
                     </span>
                   </div>
+
+                  <p class="av-text-soft">Applied on <span class="app-date-text" x-text="application.appliedDate"></span></p>
 
                   <div class="app-meta-grid">
                     <label class="app-inline-field">
@@ -147,18 +192,20 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
                       </select>
                     </label>
 
-                    <template x-if="application.location">
-                      <p class="av-text-soft">Location: <span x-text="application.location"></span></p>
-                    </template>
+                    <div class="app-meta-points">
+                      <template x-if="application.location">
+                        <p class="av-text-soft">Location: <span x-text="application.location"></span></p>
+                      </template>
 
-                    <template x-if="application.jobUrl">
-                      <p class="av-text-soft">
-                        Job URL: <a class="app-link" :href="application.jobUrl" target="_blank" rel="noreferrer">Open listing</a>
-                      </p>
-                    </template>
+                      <template x-if="application.jobUrl">
+                        <p class="av-text-soft">
+                          Listing: <a class="app-link" :href="application.jobUrl" target="_blank" rel="noreferrer">Open job URL</a>
+                        </p>
+                      </template>
+                    </div>
 
                     <template x-if="application.notes">
-                      <p class="av-text-soft">Notes: <span x-text="application.notes"></span></p>
+                      <p class="av-text-soft app-notes">Notes: <span x-text="application.notes"></span></p>
                     </template>
                   </div>
 
