@@ -28,6 +28,32 @@ This file complements the workspace-level Ansiversa-workspace/AGENTS.md (source 
 - Registry write deferred in Slice 1 (no parent write performed).
 
 ## Task Log (Recent)
+## 2026-03-10 - Job Tracker V1 Freeze
+
+Status: Locked
+
+The Job Tracker mini-app has reached the production-ready baseline.
+
+Included in this freeze:
+
+- Premium home screen layout
+- Pipeline summary panel
+- Application pipeline CRUD flow
+- Stage breakdown metrics
+- Recent applications section
+- Job application management flow
+- Consistent Ansiversa UI pattern
+- Deployment to production
+
+Verification completed:
+- npm run typecheck: pass
+- npm run build: pass
+- Production deployment verified
+
+Notes:
+Further improvements will be treated as V2 enhancements.
+No structural changes should be made to the current layout or data model without explicit version planning.
+
 - 2026-03-10 Slice 7 resume → job match intelligence (job-tracker only): extended application model/forms with `jobDescription`, local `resumeSnapshotText`, and optional `resumeLabel` for a single-repo temporary resume adapter (`db/tables.ts`, `src/modules/job-applications/types.ts`, `src/modules/job-applications/helpers.ts`, `src/actions/jobApplications.ts`, `src/modules/job-applications/store.ts`, `src/pages/app/job-applications.astro`); added dedicated match intelligence helper and action with guardrails + typed outputs for score/missing skills/strong matches/suggestions using generic `resumeText` + `jobDescription` input boundary for future Resume Builder swap-in (`src/modules/job-applications/matchIntelligence.ts`, `src/actions/jobApplications.ts`, `src/actions/index.ts`); added compact Resume Match panel UI with analyze/regenerate/copy and mobile-safe styles while preserving board/timeline + follow-up AI assist (`src/pages/app/job-applications.astro`, `src/styles/global.css`); and added Slice 7 verification checklist (`docs/verification/job-tracker-slice-7-checklist.md`). Verification: `npm run typecheck` ✅, `npm run build` ✅.
 - 2026-03-10 Slice 6 pipeline board + timeline hybrid view: added application view toggle with board default and timeline alternative; implemented store-derived board groups and filtered chronological timeline entries (`src/modules/job-applications/store.ts`), reworked `/app/job-applications` applications section into board/timeline switchable presentation while preserving existing card actions and inline history/AI assist (`src/pages/app/job-applications.astro`), added premium compact styles for switcher/board/timeline with mobile-safe stacking (`src/styles/global.css`), and added Slice 6 verification checklist (`docs/verification/job-tracker-slice-6-checklist.md`). Verification: `npm run typecheck` ✅, `npm run build` ✅.
 - 2026-03-10 Slice 5 AI follow-up assistant + insight panel: added application-bound preset AI layer with guardrails and typed outputs (`src/modules/job-applications/aiAssistant.ts`, `src/modules/job-applications/types.ts`), added server action for preset generation using existing application context (`src/actions/jobApplications.ts`, `src/actions/index.ts`), expanded client store for per-application AI panel state/loading/copy/regenerate (`src/modules/job-applications/store.ts`), integrated inline AI Assist panel into application cards with practical preset actions (`src/pages/app/job-applications.astro`) and styling for compact readable output (`src/styles/global.css`), and added Slice 5 verification checklist (`docs/verification/job-tracker-slice-5-checklist.md`). Verification: `npm run typecheck` ✅, `npm run build` ✅.
