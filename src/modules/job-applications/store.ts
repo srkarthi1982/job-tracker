@@ -11,6 +11,7 @@ import {
   type JobApplicationEventDTO,
   type JobApplicationForm,
   type JobApplicationStatus,
+  type JobMatchIntelligenceResultDTO,
 } from "./types";
 
 type JobApplicationsView = "board" | "timeline";
@@ -52,6 +53,9 @@ const defaultForm = (): JobApplicationForm => ({
   nextActionLabel: "",
   lastContactDate: "",
   interviewDate: "",
+  jobDescription: "",
+  resumeSnapshotText: "",
+  resumeLabel: "",
   notes: "",
 });
 
@@ -75,6 +79,21 @@ const defaultAiState = (): ApplicationAiUiState => ({
   result: null,
 });
 
+
+type ApplicationMatchUiState = {
+  open: boolean;
+  loading: boolean;
+  error: string | null;
+  result: JobMatchIntelligenceResultDTO | null;
+};
+
+const defaultMatchState = (): ApplicationMatchUiState => ({
+  open: false,
+  loading: false,
+  error: null,
+  result: null,
+});
+
 export class JobApplicationsStore extends AvBaseStore {
   applications: JobApplicationDTO[] = [];
   statusFilter: "all" | JobApplicationStatus = "all";
@@ -88,10 +107,12 @@ export class JobApplicationsStore extends AvBaseStore {
   success: string | null = null;
   expandedTimelineIds: string[] = [];
   aiByApplicationId: Record<string, ApplicationAiUiState> = {};
+  matchByApplicationId: Record<string, ApplicationMatchUiState> = {};
 
   init(initial?: { applications?: JobApplicationDTO[] }) {
     this.applications = initial?.applications ?? [];
     this.aiByApplicationId = Object.fromEntries(this.applications.map((application) => [application.id, defaultAiState()]));
+    this.matchByApplicationId = Object.fromEntries(this.applications.map((application) => [application.id, defaultMatchState()]));
   }
 
   get filteredApplications() {
@@ -270,6 +291,75 @@ export class JobApplicationsStore extends AvBaseStore {
     return this.expandedTimelineIds.includes(id);
   }
 
+  matchState(id: string) {
+    if (!this.matchByApplicationId[id]) {
+      this.matchByApplicationId = { ...this.matchByApplicationId, [id]: defaultMatchState() };
+    }
+    return this.matchByApplicationId[id];
+  }
+
+  toggleMatchPanel(id: string) {
+    const current = this.matchState(id);
+    this.matchByApplicationId = {
+      ...this.matchByApplicationId,
+      [id]: {
+        ...current,
+        open: !current.open,
+      },
+    };
+  }
+
+  private setMatchState(id: string, partial: Partial<ApplicationMatchUiState>) {
+    const current = this.matchState(id);
+    this.matchByApplicationId = {
+      ...this.matchByApplicationId,
+      [id]: {
+        ...current,
+        ...partial,
+      },
+    };
+  }
+
+  async runMatchAnalysis(id: string) {
+    const existing = this.applications.find((application) => application.id === id);
+    if (!existing) return;
+
+    this.setMatchState(id, { loading: true, error: null, open: true });
+
+    try {
+      const res = await actions.jobApplications.generateApplicationMatchIntelligence({ applicationId: id });
+      const data = this.unwrapResult<{ result: JobMatchIntelligenceResultDTO }>(res);
+      this.setMatchState(id, { loading: false, result: data.result });
+    } catch (err: any) {
+      this.setMatchState(id, { loading: false, error: err?.message || "Unable to analyze resume match." });
+    }
+  }
+
+  async copyMatchOutput(id: string) {
+    const state = this.matchState(id);
+    if (!state.result || typeof navigator === "undefined" || !navigator.clipboard) return;
+
+    const text = [
+      `Match score: ${state.result.matchScore}%`,
+      "",
+      "Strong matches:",
+      ...state.result.strongMatches.map((item) => `- ${item}`),
+      "",
+      "Missing skills:",
+      ...state.result.missingSkills.map((item) => `- ${item}`),
+      "",
+      "Improvement suggestions:",
+      ...state.result.improvementSuggestions.map((item) => `- ${item}`),
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(text);
+      this.success = "Match analysis copied.";
+    } catch {
+      this.error = "Unable to copy output.";
+    }
+  }
+
   aiState(id: string) {
     if (!this.aiByApplicationId[id]) {
       this.aiByApplicationId = { ...this.aiByApplicationId, [id]: defaultAiState() };
@@ -384,6 +474,9 @@ export class JobApplicationsStore extends AvBaseStore {
       nextActionLabel: application.nextActionLabel ?? "",
       lastContactDate: application.lastContactDate ?? "",
       interviewDate: application.interviewDate ?? "",
+      jobDescription: application.jobDescription ?? "",
+      resumeSnapshotText: application.resumeSnapshotText ?? "",
+      resumeLabel: application.resumeLabel ?? "",
       notes: application.notes ?? "",
     };
     this.error = null;
@@ -426,6 +519,9 @@ export class JobApplicationsStore extends AvBaseStore {
       nextActionLabel: this.form.nextActionLabel,
       lastContactDate: this.form.lastContactDate,
       interviewDate: this.form.interviewDate,
+      jobDescription: this.form.jobDescription,
+      resumeSnapshotText: this.form.resumeSnapshotText,
+      resumeLabel: this.form.resumeLabel,
       notes: this.form.notes,
     };
   }
@@ -449,6 +545,7 @@ export class JobApplicationsStore extends AvBaseStore {
       if (data?.application) {
         this.applications = [data.application, ...this.applications];
         this.aiByApplicationId = { ...this.aiByApplicationId, [data.application.id]: defaultAiState() };
+        this.matchByApplicationId = { ...this.matchByApplicationId, [data.application.id]: defaultMatchState() };
       }
       this.success = "Application created.";
       this.closeDrawer();
@@ -514,6 +611,9 @@ export class JobApplicationsStore extends AvBaseStore {
       const nextAiState = { ...this.aiByApplicationId };
       delete nextAiState[id];
       this.aiByApplicationId = nextAiState;
+      const nextMatchState = { ...this.matchByApplicationId };
+      delete nextMatchState[id];
+      this.matchByApplicationId = nextMatchState;
       this.success = "Application deleted.";
     } catch (err: any) {
       this.error = err?.message || "Unable to delete application.";
@@ -544,6 +644,9 @@ export class JobApplicationsStore extends AvBaseStore {
           nextActionLabel: existing.nextActionLabel ?? "",
           lastContactDate: existing.lastContactDate ?? "",
           interviewDate: existing.interviewDate ?? "",
+          jobDescription: existing.jobDescription ?? "",
+          resumeSnapshotText: existing.resumeSnapshotText ?? "",
+          resumeLabel: existing.resumeLabel ?? "",
           notes: existing.notes ?? "",
         },
       });

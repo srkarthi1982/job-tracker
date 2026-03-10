@@ -482,6 +482,10 @@
     grid-template-columns: 1fr;
   }
 
+  .app-match-grid {
+    grid-template-columns: 1fr;
+  }
+
   .app-pipeline-grid,
   .app-home-pipeline-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -593,3 +597,35 @@
   color: var(--av-text-strong, #eaf2ff);
   line-height: 1.45;
 }
+
+.app-match-panel {
+  border-top: 1px dashed color-mix(in srgb, var(--av-border, #2b3f5c) 52%, transparent);
+  padding-top: 0.6rem;
+}
+
+.app-match-result {
+  border: 1px solid color-mix(in srgb, var(--av-border, #2b3f5c) 52%, transparent);
+  border-radius: 0.75rem;
+  padding: 0.7rem;
+  background: color-mix(in srgb, var(--av-surface, #081024) 90%, transparent);
+}
+
+.app-match-score {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--av-primary, #58c9ff);
+}
+
+.app-match-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.app-match-list {
+  margin: 0.3rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--av-text-soft, #9fb0c7);
+}
+

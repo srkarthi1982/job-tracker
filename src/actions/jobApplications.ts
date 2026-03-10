@@ -18,6 +18,10 @@ import {
   getAiGuardrailMessage,
 } from "../modules/job-applications/aiAssistant";
 import {
+  buildMatchIntelligenceResult,
+  getMatchIntelligenceGuardrailMessage,
+} from "../modules/job-applications/matchIntelligence";
+import {
   JOB_APPLICATION_AI_ACTIONS,
   JOB_APPLICATION_EVENT_TYPE,
   JOB_APPLICATION_STATUS,
@@ -40,6 +44,9 @@ const applicationPayloadSchema = z.object({
   nextActionLabel: z.string().optional(),
   lastContactDate: z.string().optional(),
   interviewDate: z.string().optional(),
+  jobDescription: z.string().optional(),
+  resumeSnapshotText: z.string().optional(),
+  resumeLabel: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -50,6 +57,10 @@ const listSchema = z.object({
 const aiAssistSchema = z.object({
   applicationId: z.string().min(1),
   action: z.enum(JOB_APPLICATION_AI_ACTIONS),
+});
+
+const matchIntelligenceSchema = z.object({
+  applicationId: z.string().min(1),
 });
 
 const normalizePayload = (input: z.infer<typeof applicationPayloadSchema>) => {
@@ -75,6 +86,9 @@ const normalizePayload = (input: z.infer<typeof applicationPayloadSchema>) => {
     nextActionLabel: normalizeOptionalText(input.nextActionLabel),
     lastContactDate: normalizeOptionalDateInput(input.lastContactDate),
     interviewDate: normalizeOptionalDateInput(input.interviewDate),
+    jobDescription: normalizeOptionalText(input.jobDescription),
+    resumeSnapshotText: normalizeOptionalText(input.resumeSnapshotText),
+    resumeLabel: normalizeOptionalText(input.resumeLabel),
     notes: normalizeOptionalText(input.notes),
   };
 };
@@ -179,6 +193,9 @@ export const createApplication = defineAction({
         nextActionLabel: payload.nextActionLabel,
         lastContactDate: toOptionalDbDate(payload.lastContactDate),
         interviewDate: toOptionalDbDate(payload.interviewDate),
+        jobDescription: payload.jobDescription,
+        resumeSnapshotText: payload.resumeSnapshotText,
+        resumeLabel: payload.resumeLabel,
         notes: payload.notes,
         createdAt: now,
         updatedAt: now,
@@ -266,6 +283,9 @@ export const updateApplication = defineAction({
         nextActionLabel: payload.nextActionLabel,
         lastContactDate: toOptionalDbDate(payload.lastContactDate),
         interviewDate: toOptionalDbDate(payload.interviewDate),
+        jobDescription: payload.jobDescription,
+        resumeSnapshotText: payload.resumeSnapshotText,
+        resumeLabel: payload.resumeLabel,
         notes: payload.notes,
         updatedAt: new Date(),
       })
@@ -386,6 +406,43 @@ export const generateApplicationAiAssist = defineAction({
 
     return {
       result: buildApplicationAiResult(preset, application),
+    };
+  },
+});
+
+
+export const generateApplicationMatchIntelligence = defineAction({
+  input: matchIntelligenceSchema,
+  async handler({ applicationId }, context: ActionAPIContext) {
+    const user = requireUser(context);
+
+    const rows = await db
+      .select()
+      .from(job_applications)
+      .where(eq(job_applications.id, applicationId))
+      .limit(1);
+
+    if (!rows[0] || rows[0].userId !== user.id) {
+      throw new ActionError({ code: "NOT_FOUND", message: "Application not found" });
+    }
+
+    const application = normalizeJobApplication(rows[0]);
+    const guardrailMessage = getMatchIntelligenceGuardrailMessage({
+      jobDescription: application.jobDescription,
+      resumeText: application.resumeSnapshotText,
+    });
+
+    if (guardrailMessage) {
+      throw new ActionError({ code: "BAD_REQUEST", message: guardrailMessage });
+    }
+
+    return {
+      result: buildMatchIntelligenceResult({
+        jobDescription: application.jobDescription ?? "",
+        resumeText: application.resumeSnapshotText ?? "",
+        roleTitle: application.roleTitle,
+        companyName: application.companyName,
+      }),
     };
   },
 });

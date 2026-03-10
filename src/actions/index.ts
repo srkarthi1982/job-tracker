@@ -3,6 +3,7 @@ import {
   deleteApplication,
   fetchMyApplications,
   generateApplicationAiAssist,
+  generateApplicationMatchIntelligence,
   updateApplication,
 } from "./jobApplications";
 
@@ -12,6 +13,7 @@ export const jobApplications = {
   updateApplication,
   deleteApplication,
   generateApplicationAiAssist,
+  generateApplicationMatchIntelligence,
 };
 
 export const server = {
