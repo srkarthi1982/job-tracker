@@ -11,6 +11,7 @@ import CreateDrawer from "../../components/drawers/CreateDrawer.astro";
 import SettingsDrawer from "../../components/drawers/SettingsDrawer.astro";
 import AppShell from "../../layouts/AppShell.astro";
 import {
+  JOB_APPLICATION_AI_ACTIONS,
   JOB_APPLICATION_STATUS,
   JOB_APPLICATION_STATUS_LABEL,
   type JobApplicationDTO,
@@ -26,6 +27,7 @@ const result = await Astro.callAction(actions.jobApplications.fetchMyApplication
 });
 const data = (result as any)?.data ?? (result as any) ?? {};
 const applications = (data?.applications ?? []) as JobApplicationDTO[];
+const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
 
 ---
 
@@ -43,7 +45,7 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
 
   <section
     class="av-section"
-    x-data={`{ statusLabel: ${JSON.stringify(JOB_APPLICATION_STATUS_LABEL)} }`}
+    x-data={`{ statusLabel: ${JSON.stringify(JOB_APPLICATION_STATUS_LABEL)}, aiActions: ${JSON.stringify(aiActions)} }`}
   >
     <AvContainer>
       <div
@@ -232,8 +234,41 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
                     <AvButton type="button" variant="ghost" @click="toggleTimeline(application.id)" :disabled="loading">
                       <span x-text="isTimelineExpanded(application.id) ? 'Hide history' : 'View history'"></span>
                     </AvButton>
+                    <AvButton type="button" variant="ghost" @click="toggleAiPanel(application.id)" :disabled="loading || aiState(application.id).loading">
+                      <span x-text="aiState(application.id).open ? 'Hide AI assist' : 'AI Assist'"></span>
+                    </AvButton>
                     <AvButton type="button" variant="ghost" @click="openEdit(application)" :disabled="loading">Edit</AvButton>
                     <AvButton type="button" variant="ghost" @click="deleteApplication(application.id)" :disabled="loading">Delete</AvButton>
+                  </div>
+
+                  <div class="app-ai-panel av-auth-stack-xs" x-show="aiState(application.id).open">
+                    <div class="av-row-between">
+                      <h4 class="app-subheading">AI follow-up assistant</h4>
+                      <p class="av-text-soft" x-show="aiState(application.id).result" x-text="`Updated ${new Date(aiState(application.id).result.generatedAt).toLocaleString()}`"></p>
+                    </div>
+                    <p class="av-text-soft">Choose a practical preset tied to this application.</p>
+                    <div class="app-ai-actions">
+                      <template x-for="action in aiActions" :key="`${application.id}-${action}`">
+                        <AvButton
+                          type="button"
+                          variant="ghost"
+                          @click="runAiAction(application.id, action)"
+                          :disabled="aiState(application.id).loading"
+                        >
+                          <span x-text="aiActionLabel(action)"></span>
+                        </AvButton>
+                      </template>
+                    </div>
+                    <p class="app-form-error" x-show="aiState(application.id).error" x-text="aiState(application.id).error"></p>
+                    <div class="app-ai-result av-auth-stack-xs" x-show="aiState(application.id).result">
+                      <p class="app-timeline-label" x-text="aiState(application.id).result?.title"></p>
+                      <pre class="app-ai-output" x-text="aiState(application.id).result?.output"></pre>
+                      <div class="av-row-wrap">
+                        <AvButton type="button" variant="ghost" @click="copyAiOutput(application.id)">Copy</AvButton>
+                        <AvButton type="button" variant="ghost" @click="regenerateAiAction(application.id)" :disabled="aiState(application.id).loading || !aiState(application.id).lastAction">Regenerate</AvButton>
+                      </div>
+                    </div>
+                    <p class="av-text-soft" x-show="aiState(application.id).loading">Generating suggestion…</p>
                   </div>
 
                   <div class="app-timeline" x-show="isTimelineExpanded(application.id)">

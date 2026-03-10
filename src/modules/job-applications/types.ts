@@ -65,3 +65,28 @@ export type JobApplicationForm = {
   interviewDate: string;
   notes: string;
 };
+
+
+export const JOB_APPLICATION_AI_ACTIONS = [
+  "suggestNextStep",
+  "draftFollowUp",
+  "draftThankYouNote",
+  "summarizeStatus",
+] as const;
+
+export type JobApplicationAiAction = (typeof JOB_APPLICATION_AI_ACTIONS)[number];
+
+export const JOB_APPLICATION_AI_ACTION_LABEL: Record<JobApplicationAiAction, string> = {
+  suggestNextStep: "Suggest next step",
+  draftFollowUp: "Draft follow-up message",
+  draftThankYouNote: "Draft thank-you note",
+  summarizeStatus: "Summarize application status",
+};
+
+export type JobApplicationAiResultDTO = {
+  action: JobApplicationAiAction;
+  title: string;
+  output: string;
+  context: string[];
+  generatedAt: string;
+};

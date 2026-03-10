@@ -1,7 +1,14 @@
 import type { Alpine } from "alpinejs";
 import { actions } from "astro:actions";
 import { AvBaseStore } from "@ansiversa/components/alpine";
-import type { JobApplicationDTO, JobApplicationForm, JobApplicationStatus } from "./types";
+import {
+  JOB_APPLICATION_AI_ACTION_LABEL,
+  type JobApplicationAiAction,
+  type JobApplicationAiResultDTO,
+  type JobApplicationDTO,
+  type JobApplicationForm,
+  type JobApplicationStatus,
+} from "./types";
 
 export type JobApplicationSortOption =
   | "updatedDesc"
@@ -27,6 +34,24 @@ const defaultForm = (): JobApplicationForm => ({
 
 const todayDate = () => new Date().toISOString().slice(0, 10);
 
+type ApplicationAiUiState = {
+  open: boolean;
+  loading: boolean;
+  error: string | null;
+  activeAction: JobApplicationAiAction | null;
+  lastAction: JobApplicationAiAction | null;
+  result: JobApplicationAiResultDTO | null;
+};
+
+const defaultAiState = (): ApplicationAiUiState => ({
+  open: false,
+  loading: false,
+  error: null,
+  activeAction: null,
+  lastAction: null,
+  result: null,
+});
+
 export class JobApplicationsStore extends AvBaseStore {
   applications: JobApplicationDTO[] = [];
   statusFilter: "all" | JobApplicationStatus = "all";
@@ -38,9 +63,11 @@ export class JobApplicationsStore extends AvBaseStore {
   error: string | null = null;
   success: string | null = null;
   expandedTimelineIds: string[] = [];
+  aiByApplicationId: Record<string, ApplicationAiUiState> = {};
 
   init(initial?: { applications?: JobApplicationDTO[] }) {
     this.applications = initial?.applications ?? [];
+    this.aiByApplicationId = Object.fromEntries(this.applications.map((application) => [application.id, defaultAiState()]));
   }
 
   get filteredApplications() {
@@ -152,6 +179,86 @@ export class JobApplicationsStore extends AvBaseStore {
     return this.expandedTimelineIds.includes(id);
   }
 
+  aiState(id: string) {
+    if (!this.aiByApplicationId[id]) {
+      this.aiByApplicationId = { ...this.aiByApplicationId, [id]: defaultAiState() };
+    }
+    return this.aiByApplicationId[id];
+  }
+
+  toggleAiPanel(id: string) {
+    const current = this.aiState(id);
+    this.aiByApplicationId = {
+      ...this.aiByApplicationId,
+      [id]: {
+        ...current,
+        open: !current.open,
+      },
+    };
+  }
+
+  aiActionLabel(action: JobApplicationAiAction) {
+    return JOB_APPLICATION_AI_ACTION_LABEL[action] ?? action;
+  }
+
+  private setAiState(id: string, partial: Partial<ApplicationAiUiState>) {
+    const current = this.aiState(id);
+    this.aiByApplicationId = {
+      ...this.aiByApplicationId,
+      [id]: {
+        ...current,
+        ...partial,
+      },
+    };
+  }
+
+  async runAiAction(id: string, action: JobApplicationAiAction) {
+    const existing = this.applications.find((application) => application.id === id);
+    if (!existing) return;
+
+    this.setAiState(id, {
+      loading: true,
+      error: null,
+      activeAction: action,
+      open: true,
+    });
+
+    try {
+      const res = await actions.jobApplications.generateApplicationAiAssist({ applicationId: id, action });
+      const data = this.unwrapResult<{ result: JobApplicationAiResultDTO }>(res);
+      this.setAiState(id, {
+        loading: false,
+        activeAction: null,
+        lastAction: action,
+        result: data.result,
+      });
+    } catch (err: any) {
+      this.setAiState(id, {
+        loading: false,
+        activeAction: null,
+        error: err?.message || "Unable to generate AI suggestion.",
+      });
+    }
+  }
+
+  async regenerateAiAction(id: string) {
+    const state = this.aiState(id);
+    if (!state.lastAction) return;
+    await this.runAiAction(id, state.lastAction);
+  }
+
+  async copyAiOutput(id: string) {
+    const state = this.aiState(id);
+    if (!state.result?.output || typeof navigator === "undefined" || !navigator.clipboard) return;
+
+    try {
+      await navigator.clipboard.writeText(state.result.output);
+      this.success = "AI output copied.";
+    } catch {
+      this.error = "Unable to copy output.";
+    }
+  }
+
   private unwrapResult<T = any>(result: any): T {
     if (result?.error) {
       const message = result.error?.message || result.error;
@@ -250,6 +357,7 @@ export class JobApplicationsStore extends AvBaseStore {
       const data = this.unwrapResult<{ application: JobApplicationDTO }>(res);
       if (data?.application) {
         this.applications = [data.application, ...this.applications];
+        this.aiByApplicationId = { ...this.aiByApplicationId, [data.application.id]: defaultAiState() };
       }
       this.success = "Application created.";
       this.closeDrawer();
@@ -312,6 +420,9 @@ export class JobApplicationsStore extends AvBaseStore {
       const res = await actions.jobApplications.deleteApplication({ id });
       this.unwrapResult(res);
       this.applications = this.applications.filter((application) => application.id !== id);
+      const nextAiState = { ...this.aiByApplicationId };
+      delete nextAiState[id];
+      this.aiByApplicationId = nextAiState;
       this.success = "Application deleted.";
     } catch (err: any) {
       this.error = err?.message || "Unable to delete application.";
