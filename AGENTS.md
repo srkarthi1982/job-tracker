@@ -28,6 +28,8 @@ This file complements the workspace-level Ansiversa-workspace/AGENTS.md (source 
 - Registry write deferred in Slice 1 (no parent write performed).
 
 ## Task Log (Recent)
+- 2026-03-10 Mini app bar label fix (job-tracker): replaced slug-style mini-nav title rendering with the human-readable app name by introducing `APP_NAME = "Job Tracker"` in `src/app.meta.ts` and wiring `src/layouts/AppShell.astro` to pass `miniAppKey={APP_NAME}` to shared `WebLayout`, so the bar shows "Job Tracker" instead of "job-tracker". Verification: `npm run typecheck` ✅.
+
 ## 2026-03-10 - Job Tracker V1 Freeze
 
 Status: Locked
