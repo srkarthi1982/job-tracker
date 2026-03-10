@@ -58,7 +58,7 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
             <div>
               <p class="av-kicker">Job Tracker</p>
               <h1 class="av-section-title">Your job applications</h1>
-              <p class="av-text-soft">Track applications, interviews, offers, and outcomes in one place.</p>
+              <p class="av-text-soft">Track applications, interviews, follow-ups, and outcomes in one place.</p>
             </div>
             <AvButton type="button" @click="openCreate">Create application</AvButton>
           </div>
@@ -70,37 +70,47 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
           </template>
         </AvCard>
 
-        <div class="app-summary-grid">
-          <AvCard variant="soft">
-            <p class="av-text-soft">Total applications</p>
-            <h2 class="av-section-title"><span x-text="applications.length"></span></h2>
-          </AvCard>
-          <AvCard variant="soft">
-            <p class="av-text-soft">Interviews</p>
-            <h2 class="av-section-title"><span x-text="statusCounts.interview"></span></h2>
-          </AvCard>
-          <AvCard variant="soft">
-            <p class="av-text-soft">Offers</p>
-            <h2 class="av-section-title"><span x-text="statusCounts.offer"></span></h2>
-          </AvCard>
-          <AvCard variant="soft">
-            <p class="av-text-soft">Active pipeline</p>
-            <h2 class="av-section-title"><span x-text="activeCount"></span></h2>
-          </AvCard>
-        </div>
-
         <AvCard variant="soft" className="av-auth-stack-sm">
           <div class="av-row-between">
-            <h2 class="av-card-heading">Pipeline snapshot</h2>
-            <p class="av-text-soft"><span x-text="closedCount"></span> closed outcomes</p>
+            <h2 class="av-card-heading">Needs attention</h2>
+            <p class="av-text-soft">Stay on top of follow-ups and interviews</p>
           </div>
-          <div class="app-pipeline-grid">
-            {JOB_APPLICATION_STATUS.map((status) => (
-              <div class="av-card av-card-soft app-pipeline-item">
-                <p class="av-text-soft">{JOB_APPLICATION_STATUS_LABEL[status]}</p>
-                <p class="av-card-heading" x-text={`statusCounts.${status}`}></p>
-              </div>
-            ))}
+          <div class="app-needs-grid">
+            <div class="av-card av-card-soft app-needs-col av-auth-stack-xs">
+              <h3 class="app-subheading">Overdue</h3>
+              <template x-if="needsAttention.overdue.length === 0">
+                <p class="av-text-soft">No overdue follow-ups.</p>
+              </template>
+              <template x-if="needsAttention.overdue.length > 0">
+                <div class="av-auth-stack-xs">
+                  <template x-for="item in needsAttention.overdue" :key="`overdue-${item.id}`">
+                    <div class="app-needs-item">
+                      <p class="app-needs-item-title"><span x-text="item.companyName"></span> · <span x-text="item.roleTitle"></span></p>
+                      <p class="av-text-soft">
+                        <span x-text="item.nextActionLabel || 'Follow up'"></span> by <span x-text="item.nextActionDate"></span>
+                      </p>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
+
+            <div class="av-card av-card-soft app-needs-col av-auth-stack-xs">
+              <h3 class="app-subheading">Upcoming interviews</h3>
+              <template x-if="needsAttention.upcoming.length === 0">
+                <p class="av-text-soft">No interviews in the next 7 days.</p>
+              </template>
+              <template x-if="needsAttention.upcoming.length > 0">
+                <div class="av-auth-stack-xs">
+                  <template x-for="item in needsAttention.upcoming" :key="`upcoming-${item.id}`">
+                    <div class="app-needs-item">
+                      <p class="app-needs-item-title"><span x-text="item.companyName"></span> · <span x-text="item.roleTitle"></span></p>
+                      <p class="av-text-soft">Interview on <span x-text="item.interviewDate"></span></p>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
           </div>
         </AvCard>
 
@@ -138,6 +148,7 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
                 <option value="appliedDesc">Applied date (newest first)</option>
                 <option value="appliedAsc">Applied date (oldest first)</option>
                 <option value="companyAsc">Company name (A–Z)</option>
+                <option value="nextActionAsc">Next action date (soonest first)</option>
               </select>
             </label>
           </div>
@@ -193,10 +204,18 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
                     </label>
 
                     <div class="app-meta-points">
+                      <template x-if="application.nextActionDate">
+                        <p class="av-text-soft">Next action: <strong x-text="application.nextActionLabel || 'Follow up'"></strong> by <span x-text="application.nextActionDate"></span></p>
+                      </template>
+                      <template x-if="application.interviewDate">
+                        <p class="av-text-soft">Interview date: <span x-text="application.interviewDate"></span></p>
+                      </template>
+                      <template x-if="application.lastContactDate">
+                        <p class="av-text-soft">Last contact: <span x-text="application.lastContactDate"></span></p>
+                      </template>
                       <template x-if="application.location">
                         <p class="av-text-soft">Location: <span x-text="application.location"></span></p>
                       </template>
-
                       <template x-if="application.jobUrl">
                         <p class="av-text-soft">
                           Listing: <a class="app-link" :href="application.jobUrl" target="_blank" rel="noreferrer">Open job URL</a>
@@ -210,8 +229,31 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
                   </div>
 
                   <div class="av-row-wrap">
+                    <AvButton type="button" variant="ghost" @click="toggleTimeline(application.id)" :disabled="loading">
+                      <span x-text="isTimelineExpanded(application.id) ? 'Hide history' : 'View history'"></span>
+                    </AvButton>
                     <AvButton type="button" variant="ghost" @click="openEdit(application)" :disabled="loading">Edit</AvButton>
                     <AvButton type="button" variant="ghost" @click="deleteApplication(application.id)" :disabled="loading">Delete</AvButton>
+                  </div>
+
+                  <div class="app-timeline" x-show="isTimelineExpanded(application.id)">
+                    <h4 class="app-subheading">Timeline</h4>
+                    <template x-if="application.events.length === 0">
+                      <p class="av-text-soft">No history yet for this application.</p>
+                    </template>
+                    <template x-if="application.events.length > 0">
+                      <div class="av-auth-stack-xs">
+                        <template x-for="event in application.events" :key="event.id">
+                          <div class="app-timeline-item">
+                            <p class="app-timeline-label" x-text="event.eventLabel"></p>
+                            <p class="av-text-soft"><span x-text="event.eventDate"></span></p>
+                            <template x-if="event.notes">
+                              <p class="av-text-soft" x-text="event.notes"></p>
+                            </template>
+                          </div>
+                        </template>
+                      </div>
+                    </template>
                   </div>
                 </div>
               </template>
@@ -221,36 +263,65 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
 
         <template x-if="$store.appDrawer.activeDrawer === 'create'">
           <CreateDrawer title="Create application" description="Add a new job application entry.">
-            <div class="app-form-grid">
+            <div class="app-form-group av-auth-stack-xs">
+              <h3 class="app-subheading">Basic application info</h3>
+              <div class="app-form-grid">
+                <label class="app-field">
+                  <span class="app-label">Company name</span>
+                  <input class="app-input" type="text" x-model="form.companyName" maxlength="120" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Role title</span>
+                  <input class="app-input" type="text" x-model="form.roleTitle" maxlength="120" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Status</span>
+                  <select class="app-input" x-model="form.status">
+                    {JOB_APPLICATION_STATUS.map((status) => (
+                      <option value={status}>{JOB_APPLICATION_STATUS_LABEL[status] ?? status}</option>
+                    ))}
+                  </select>
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Applied date</span>
+                  <input class="app-input" type="date" x-model="form.appliedDate" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Job URL</span>
+                  <input class="app-input" type="url" x-model="form.jobUrl" maxlength="400" placeholder="https://" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Location</span>
+                  <input class="app-input" type="text" x-model="form.location" maxlength="120" />
+                </label>
+              </div>
+            </div>
+
+            <div class="app-form-group av-auth-stack-xs">
+              <h3 class="app-subheading">Tracking and follow-up info</h3>
+              <div class="app-form-grid">
+                <label class="app-field">
+                  <span class="app-label">Interview date</span>
+                  <input class="app-input" type="date" x-model="form.interviewDate" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Last contact date</span>
+                  <input class="app-input" type="date" x-model="form.lastContactDate" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Next action date</span>
+                  <input class="app-input" type="date" x-model="form.nextActionDate" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Next action label</span>
+                  <input class="app-input" type="text" x-model="form.nextActionLabel" maxlength="120" placeholder="Follow up" />
+                </label>
+              </div>
+            </div>
+
+            <div class="app-form-group av-auth-stack-xs">
+              <h3 class="app-subheading">Notes</h3>
               <label class="app-field">
-                <span class="app-label">Company name</span>
-                <input class="app-input" type="text" x-model="form.companyName" maxlength="120" />
-              </label>
-              <label class="app-field">
-                <span class="app-label">Role title</span>
-                <input class="app-input" type="text" x-model="form.roleTitle" maxlength="120" />
-              </label>
-              <label class="app-field">
-                <span class="app-label">Status</span>
-                <select class="app-input" x-model="form.status">
-                  {JOB_APPLICATION_STATUS.map((status) => (
-                    <option value={status}>{JOB_APPLICATION_STATUS_LABEL[status] ?? status}</option>
-                  ))}
-                </select>
-              </label>
-              <label class="app-field">
-                <span class="app-label">Applied date</span>
-                <input class="app-input" type="date" x-model="form.appliedDate" />
-              </label>
-              <label class="app-field">
-                <span class="app-label">Job URL</span>
-                <input class="app-input" type="url" x-model="form.jobUrl" maxlength="400" placeholder="https://" />
-              </label>
-              <label class="app-field">
-                <span class="app-label">Location</span>
-                <input class="app-input" type="text" x-model="form.location" maxlength="120" />
-              </label>
-              <label class="app-field app-field-wide">
                 <span class="app-label">Notes</span>
                 <textarea class="app-input" x-model="form.notes" rows="4" maxlength="2000"></textarea>
               </label>
@@ -269,37 +340,66 @@ const applications = (data?.applications ?? []) as JobApplicationDTO[];
         </template>
 
         <template x-if="$store.appDrawer.activeDrawer === 'settings'">
-          <SettingsDrawer title="Edit application" description="Update details or status.">
-            <div class="app-form-grid">
+          <SettingsDrawer title="Edit application" description="Update details, follow-up plan, or status.">
+            <div class="app-form-group av-auth-stack-xs">
+              <h3 class="app-subheading">Basic application info</h3>
+              <div class="app-form-grid">
+                <label class="app-field">
+                  <span class="app-label">Company name</span>
+                  <input class="app-input" type="text" x-model="form.companyName" maxlength="120" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Role title</span>
+                  <input class="app-input" type="text" x-model="form.roleTitle" maxlength="120" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Status</span>
+                  <select class="app-input" x-model="form.status">
+                    {JOB_APPLICATION_STATUS.map((status) => (
+                      <option value={status}>{JOB_APPLICATION_STATUS_LABEL[status] ?? status}</option>
+                    ))}
+                  </select>
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Applied date</span>
+                  <input class="app-input" type="date" x-model="form.appliedDate" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Job URL</span>
+                  <input class="app-input" type="url" x-model="form.jobUrl" maxlength="400" placeholder="https://" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Location</span>
+                  <input class="app-input" type="text" x-model="form.location" maxlength="120" />
+                </label>
+              </div>
+            </div>
+
+            <div class="app-form-group av-auth-stack-xs">
+              <h3 class="app-subheading">Tracking and follow-up info</h3>
+              <div class="app-form-grid">
+                <label class="app-field">
+                  <span class="app-label">Interview date</span>
+                  <input class="app-input" type="date" x-model="form.interviewDate" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Last contact date</span>
+                  <input class="app-input" type="date" x-model="form.lastContactDate" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Next action date</span>
+                  <input class="app-input" type="date" x-model="form.nextActionDate" />
+                </label>
+                <label class="app-field">
+                  <span class="app-label">Next action label</span>
+                  <input class="app-input" type="text" x-model="form.nextActionLabel" maxlength="120" placeholder="Follow up" />
+                </label>
+              </div>
+            </div>
+
+            <div class="app-form-group av-auth-stack-xs">
+              <h3 class="app-subheading">Notes</h3>
               <label class="app-field">
-                <span class="app-label">Company name</span>
-                <input class="app-input" type="text" x-model="form.companyName" maxlength="120" />
-              </label>
-              <label class="app-field">
-                <span class="app-label">Role title</span>
-                <input class="app-input" type="text" x-model="form.roleTitle" maxlength="120" />
-              </label>
-              <label class="app-field">
-                <span class="app-label">Status</span>
-                <select class="app-input" x-model="form.status">
-                  {JOB_APPLICATION_STATUS.map((status) => (
-                    <option value={status}>{JOB_APPLICATION_STATUS_LABEL[status] ?? status}</option>
-                  ))}
-                </select>
-              </label>
-              <label class="app-field">
-                <span class="app-label">Applied date</span>
-                <input class="app-input" type="date" x-model="form.appliedDate" />
-              </label>
-              <label class="app-field">
-                <span class="app-label">Job URL</span>
-                <input class="app-input" type="url" x-model="form.jobUrl" maxlength="400" placeholder="https://" />
-              </label>
-              <label class="app-field">
-                <span class="app-label">Location</span>
-                <input class="app-input" type="text" x-model="form.location" maxlength="120" />
-              </label>
-              <label class="app-field app-field-wide">
                 <span class="app-label">Notes</span>
                 <textarea class="app-input" x-model="form.notes" rows="4" maxlength="2000"></textarea>
               </label>

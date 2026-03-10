@@ -8,7 +8,8 @@ export type JobApplicationSortOption =
   | "updatedAsc"
   | "appliedDesc"
   | "appliedAsc"
-  | "companyAsc";
+  | "companyAsc"
+  | "nextActionAsc";
 
 const defaultForm = (): JobApplicationForm => ({
   companyName: "",
@@ -17,22 +18,16 @@ const defaultForm = (): JobApplicationForm => ({
   appliedDate: new Date().toISOString().slice(0, 10),
   jobUrl: "",
   location: "",
+  nextActionDate: "",
+  nextActionLabel: "",
+  lastContactDate: "",
+  interviewDate: "",
   notes: "",
 });
 
-const defaultState = () => ({
-  applications: [] as JobApplicationDTO[],
-  statusFilter: "all" as "all" | JobApplicationStatus,
-  searchQuery: "",
-  sortBy: "updatedDesc" as JobApplicationSortOption,
-  form: defaultForm(),
-  editingId: null as string | null,
-  loading: false,
-  error: null as string | null,
-  success: null as string | null,
-});
+const todayDate = () => new Date().toISOString().slice(0, 10);
 
-export class JobApplicationsStore extends AvBaseStore implements ReturnType<typeof defaultState> {
+export class JobApplicationsStore extends AvBaseStore {
   applications: JobApplicationDTO[] = [];
   statusFilter: "all" | JobApplicationStatus = "all";
   searchQuery = "";
@@ -42,6 +37,7 @@ export class JobApplicationsStore extends AvBaseStore implements ReturnType<type
   loading = false;
   error: string | null = null;
   success: string | null = null;
+  expandedTimelineIds: string[] = [];
 
   init(initial?: { applications?: JobApplicationDTO[] }) {
     this.applications = initial?.applications ?? [];
@@ -67,6 +63,8 @@ export class JobApplicationsStore extends AvBaseStore implements ReturnType<type
       const updatedRight = new Date(right.updatedAt).getTime();
       const appliedLeft = new Date(left.appliedDate).getTime();
       const appliedRight = new Date(right.appliedDate).getTime();
+      const actionLeft = left.nextActionDate ? new Date(left.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
+      const actionRight = right.nextActionDate ? new Date(right.nextActionDate).getTime() : Number.MAX_SAFE_INTEGER;
 
       switch (this.sortBy) {
         case "updatedAsc":
@@ -77,6 +75,8 @@ export class JobApplicationsStore extends AvBaseStore implements ReturnType<type
           return appliedLeft - appliedRight;
         case "companyAsc":
           return left.companyName.localeCompare(right.companyName);
+        case "nextActionAsc":
+          return actionLeft - actionRight;
         case "updatedDesc":
         default:
           return updatedRight - updatedLeft;
@@ -116,10 +116,40 @@ export class JobApplicationsStore extends AvBaseStore implements ReturnType<type
     return this.statusCounts.rejected + this.statusCounts.accepted;
   }
 
+  get needsAttention() {
+    const today = todayDate();
+    const overdue = this.applications
+      .filter((application) => !!application.nextActionDate && application.nextActionDate <= today)
+      .sort((a, b) => (a.nextActionDate ?? "").localeCompare(b.nextActionDate ?? ""));
+
+    const upcoming = this.applications
+      .filter((application) => {
+        if (!application.interviewDate) return false;
+        const diff = new Date(application.interviewDate).getTime() - new Date(today).getTime();
+        const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+        return days >= 0 && days <= 7;
+      })
+      .sort((a, b) => (a.interviewDate ?? "").localeCompare(b.interviewDate ?? ""));
+
+    return { overdue, upcoming };
+  }
+
   resetFilters() {
     this.statusFilter = "all";
     this.searchQuery = "";
     this.sortBy = "updatedDesc";
+  }
+
+  toggleTimeline(id: string) {
+    if (this.expandedTimelineIds.includes(id)) {
+      this.expandedTimelineIds = this.expandedTimelineIds.filter((item) => item !== id);
+      return;
+    }
+    this.expandedTimelineIds = [...this.expandedTimelineIds, id];
+  }
+
+  isTimelineExpanded(id: string) {
+    return this.expandedTimelineIds.includes(id);
   }
 
   private unwrapResult<T = any>(result: any): T {
@@ -152,6 +182,10 @@ export class JobApplicationsStore extends AvBaseStore implements ReturnType<type
       appliedDate: application.appliedDate,
       jobUrl: application.jobUrl ?? "",
       location: application.location ?? "",
+      nextActionDate: application.nextActionDate ?? "",
+      nextActionLabel: application.nextActionLabel ?? "",
+      lastContactDate: application.lastContactDate ?? "",
+      interviewDate: application.interviewDate ?? "",
       notes: application.notes ?? "",
     };
     this.error = null;
@@ -176,6 +210,9 @@ export class JobApplicationsStore extends AvBaseStore implements ReturnType<type
     if (!this.form.appliedDate.trim()) {
       return "Applied date is required.";
     }
+    if (this.form.nextActionDate.trim() && !this.form.nextActionLabel.trim()) {
+      return "Next action label is required when next action date is set.";
+    }
     return null;
   }
 
@@ -187,6 +224,10 @@ export class JobApplicationsStore extends AvBaseStore implements ReturnType<type
       appliedDate: this.form.appliedDate,
       jobUrl: this.form.jobUrl,
       location: this.form.location,
+      nextActionDate: this.form.nextActionDate,
+      nextActionLabel: this.form.nextActionLabel,
+      lastContactDate: this.form.lastContactDate,
+      interviewDate: this.form.interviewDate,
       notes: this.form.notes,
     };
   }
@@ -297,6 +338,10 @@ export class JobApplicationsStore extends AvBaseStore implements ReturnType<type
           appliedDate: existing.appliedDate,
           jobUrl: existing.jobUrl ?? "",
           location: existing.location ?? "",
+          nextActionDate: existing.nextActionDate ?? "",
+          nextActionLabel: existing.nextActionLabel ?? "",
+          lastContactDate: existing.lastContactDate ?? "",
+          interviewDate: existing.interviewDate ?? "",
           notes: existing.notes ?? "",
         },
       });

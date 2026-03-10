@@ -11,6 +11,28 @@ export const JOB_APPLICATION_STATUS_LABEL: Record<JobApplicationStatus, string> 
   accepted: "Accepted",
 };
 
+export const JOB_APPLICATION_EVENT_TYPE = [
+  "created",
+  "statusChanged",
+  "interviewScheduled",
+  "followUpPlanned",
+  "contactLogged",
+  "noteAdded",
+] as const;
+
+export type JobApplicationEventType = (typeof JOB_APPLICATION_EVENT_TYPE)[number];
+
+export type JobApplicationEventDTO = {
+  id: string;
+  applicationId: string;
+  userId: string;
+  eventType: JobApplicationEventType;
+  eventLabel: string;
+  eventDate: string;
+  notes: string | null;
+  createdAt: string;
+};
+
 export type JobApplicationDTO = {
   id: string;
   userId: string;
@@ -20,7 +42,12 @@ export type JobApplicationDTO = {
   appliedDate: string;
   jobUrl: string | null;
   location: string | null;
+  nextActionDate: string | null;
+  nextActionLabel: string | null;
+  lastContactDate: string | null;
+  interviewDate: string | null;
   notes: string | null;
+  events: JobApplicationEventDTO[];
   createdAt: string;
   updatedAt: string;
 };
@@ -32,5 +59,9 @@ export type JobApplicationForm = {
   appliedDate: string;
   jobUrl: string;
   location: string;
+  nextActionDate: string;
+  nextActionLabel: string;
+  lastContactDate: string;
+  interviewDate: string;
   notes: string;
 };

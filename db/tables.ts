@@ -10,6 +10,10 @@ export const job_applications = defineTable({
     appliedDate: column.date(),
     jobUrl: column.text({ optional: true }),
     location: column.text({ optional: true }),
+    nextActionDate: column.date({ optional: true }),
+    nextActionLabel: column.text({ optional: true }),
+    lastContactDate: column.date({ optional: true }),
+    interviewDate: column.date({ optional: true }),
     notes: column.text({ optional: true }),
     createdAt: column.date({ default: NOW }),
     updatedAt: column.date({ default: NOW }),
@@ -18,6 +22,24 @@ export const job_applications = defineTable({
     { name: "job_applications_user_idx", on: "userId" },
     { name: "job_applications_user_status_idx", on: ["userId", "status"] },
     { name: "job_applications_user_updated_idx", on: ["userId", "updatedAt"] },
+  ],
+});
+
+export const job_application_events = defineTable({
+  columns: {
+    id: column.text({ primaryKey: true }),
+    applicationId: column.text(),
+    userId: column.text(),
+    eventType: column.text(),
+    eventLabel: column.text(),
+    eventDate: column.date(),
+    notes: column.text({ optional: true }),
+    createdAt: column.date({ default: NOW }),
+  },
+  indexes: [
+    { name: "job_app_events_user_idx", on: "userId" },
+    { name: "job_app_events_application_idx", on: ["applicationId", "eventDate"] },
+    { name: "job_app_events_created_idx", on: ["userId", "createdAt"] },
   ],
 });
 
@@ -47,5 +69,6 @@ export const Faq = defineTable({
 
 export const starterTables = {
   job_applications,
+  job_application_events,
   Faq,
 } as const;
