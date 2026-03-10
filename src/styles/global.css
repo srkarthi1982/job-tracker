@@ -76,6 +76,40 @@
   gap: 0.5rem;
 }
 
+.app-filter-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.app-filter-empty {
+  border: 1px dashed color-mix(in srgb, var(--av-border, #2b3f5c) 72%, transparent);
+  border-radius: 0.85rem;
+  padding: 0.85rem;
+}
+
+.app-application-card {
+  gap: 0.6rem;
+}
+
+.app-role-line {
+  margin: 0.2rem 0 0;
+  color: var(--av-text-soft, #9fb0c7);
+}
+
+.app-date-text {
+  color: var(--av-text-strong, #eaf2ff);
+}
+
+.app-meta-points {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.app-notes {
+  opacity: 0.86;
+}
+
 .app-summary-grid,
 .app-home-summary-grid {
   display: grid;
@@ -363,6 +397,10 @@
   .app-summary-grid,
   .app-home-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-filter-grid {
+    grid-template-columns: 1fr;
   }
 
   .app-pipeline-grid,

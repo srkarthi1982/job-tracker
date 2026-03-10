@@ -3,6 +3,13 @@ import { actions } from "astro:actions";
 import { AvBaseStore } from "@ansiversa/components/alpine";
 import type { JobApplicationDTO, JobApplicationForm, JobApplicationStatus } from "./types";
 
+export type JobApplicationSortOption =
+  | "updatedDesc"
+  | "updatedAsc"
+  | "appliedDesc"
+  | "appliedAsc"
+  | "companyAsc";
+
 const defaultForm = (): JobApplicationForm => ({
   companyName: "",
   roleTitle: "",
@@ -15,6 +22,9 @@ const defaultForm = (): JobApplicationForm => ({
 
 const defaultState = () => ({
   applications: [] as JobApplicationDTO[],
+  statusFilter: "all" as "all" | JobApplicationStatus,
+  searchQuery: "",
+  sortBy: "updatedDesc" as JobApplicationSortOption,
   form: defaultForm(),
   editingId: null as string | null,
   loading: false,
@@ -24,6 +34,9 @@ const defaultState = () => ({
 
 export class JobApplicationsStore extends AvBaseStore implements ReturnType<typeof defaultState> {
   applications: JobApplicationDTO[] = [];
+  statusFilter: "all" | JobApplicationStatus = "all";
+  searchQuery = "";
+  sortBy: JobApplicationSortOption = "updatedDesc";
   form: JobApplicationForm = defaultForm();
   editingId: string | null = null;
   loading = false;
@@ -32,6 +45,47 @@ export class JobApplicationsStore extends AvBaseStore implements ReturnType<type
 
   init(initial?: { applications?: JobApplicationDTO[] }) {
     this.applications = initial?.applications ?? [];
+  }
+
+  get filteredApplications() {
+    const query = this.searchQuery.trim().toLowerCase();
+
+    return this.applications.filter((application) => {
+      const matchesStatus = this.statusFilter === "all" || application.status === this.statusFilter;
+      if (!matchesStatus) return false;
+
+      if (!query) return true;
+
+      return [application.companyName, application.roleTitle, application.location ?? ""]
+        .some((value) => value.toLowerCase().includes(query));
+    });
+  }
+
+  get visibleApplications() {
+    return [...this.filteredApplications].sort((left, right) => {
+      const updatedLeft = new Date(left.updatedAt).getTime();
+      const updatedRight = new Date(right.updatedAt).getTime();
+      const appliedLeft = new Date(left.appliedDate).getTime();
+      const appliedRight = new Date(right.appliedDate).getTime();
+
+      switch (this.sortBy) {
+        case "updatedAsc":
+          return updatedLeft - updatedRight;
+        case "appliedDesc":
+          return appliedRight - appliedLeft;
+        case "appliedAsc":
+          return appliedLeft - appliedRight;
+        case "companyAsc":
+          return left.companyName.localeCompare(right.companyName);
+        case "updatedDesc":
+        default:
+          return updatedRight - updatedLeft;
+      }
+    });
+  }
+
+  get hasActiveFilters() {
+    return this.statusFilter !== "all" || this.searchQuery.trim().length > 0;
   }
 
   get statusCounts() {
@@ -60,6 +114,12 @@ export class JobApplicationsStore extends AvBaseStore implements ReturnType<type
 
   get closedCount() {
     return this.statusCounts.rejected + this.statusCounts.accepted;
+  }
+
+  resetFilters() {
+    this.statusFilter = "all";
+    this.searchQuery = "";
+    this.sortBy = "updatedDesc";
   }
 
   private unwrapResult<T = any>(result: any): T {
