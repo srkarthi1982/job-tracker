@@ -31,7 +31,9 @@ export const job_applications = defineTable({
 export const job_application_events = defineTable({
   columns: {
     id: column.text({ primaryKey: true }),
-    applicationId: column.text(),
+    applicationId: column.text({
+      references: () => job_applications.columns.id,
+    }),
     userId: column.text(),
     eventType: column.text(),
     eventLabel: column.text(),
