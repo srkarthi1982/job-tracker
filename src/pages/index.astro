@@ -1,173 +1,147 @@
 ---
-import { AvButton, AvCard, AvContainer, AvEmptyState } from "@ansiversa/components";
-import { actions } from "astro:actions";
+import { AvButton, AvCard, AvContainer, AvTimeline } from "@ansiversa/components";
 import AppShell from "../layouts/AppShell.astro";
-import {
-  JOB_APPLICATION_STATUS,
-  JOB_APPLICATION_STATUS_LABEL,
-  type JobApplicationDTO,
-} from "../modules/job-applications/types";
 
 const title = "Job Tracker – Ansiversa";
 const description = "Track your job search pipeline from wishlist to accepted offer.";
 
-const result = await Astro.callAction(actions.jobApplications.fetchMyApplications, {
-  limit: 200,
-});
-const data = (result as any)?.data ?? (result as any) ?? {};
-const applications = (data?.applications ?? []) as JobApplicationDTO[];
+if (Astro.locals.isAuthenticated || Astro.locals.user?.id) {
+  return Astro.redirect("/app/job-applications");
+}
 
-const statusCounts = applications.reduce(
-  (acc, application) => {
-    acc[application.status] += 1;
-    return acc;
+const stageFlow = [
+  { name: "Wishlist", detail: "Capture interesting roles before they disappear." },
+  { name: "Applied", detail: "Log where you have already submitted." },
+  { name: "Interview", detail: "Keep conversations and prep milestones visible." },
+  { name: "Offer", detail: "Track live opportunities and decision timing." },
+  { name: "Accepted / Rejected", detail: "Close the loop with a clean outcome history." },
+];
+
+const pillars = [
+  {
+    title: "Pipeline-first tracking",
+    body: "Move every application through clear stages instead of juggling tabs and spreadsheets.",
   },
   {
-    wishlist: 0,
-    applied: 0,
-    interview: 0,
-    offer: 0,
-    rejected: 0,
-    accepted: 0,
-  } as Record<(typeof JOB_APPLICATION_STATUS)[number], number>,
-);
+    title: "Fast status updates",
+    body: "Quick edits keep your search current without turning tracking into extra work.",
+  },
+  {
+    title: "Clean review history",
+    body: "Notes, follow-ups, and stage changes stay attached to the right application.",
+  },
+  {
+    title: "Weekly review clarity",
+    body: "See where momentum is building and where follow-up discipline is slipping.",
+  },
+  {
+    title: "Better than spreadsheets",
+    body: "Stay organized with a purpose-built workflow instead of loose rows and manual formulas.",
+  },
+  {
+    title: "Search momentum visibility",
+    body: "Know what is active, what is stalled, and what needs your next action.",
+  },
+];
 
-const activeCount = statusCounts.wishlist + statusCounts.applied + statusCounts.interview + statusCounts.offer;
-const recentApplications = applications
-  .slice()
-  .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-  .slice(0, 5);
+const workflowItems = [
+  {
+    date: "Step 01",
+    title: "Add an application",
+    body: "Start with company, role, applied date, and the stage that matches your current position.",
+  },
+  {
+    date: "Step 02",
+    title: "Update stages and notes",
+    body: "Capture interviews, follow-ups, and context as the application moves forward.",
+  },
+  {
+    date: "Step 03",
+    title: "Review progress and next steps",
+    body: "Use the tracker as your weekly control panel for momentum, timing, and follow-through.",
+  },
+];
 ---
 
 <AppShell title={title} description={description}>
-  <section class="job-home-hero">
-    <AvContainer size="default" className="job-home-container">
-      <div class="job-home-hero__grid">
-        <div class="job-home-hero__text">
-          <p class="job-home-eyebrow">Career Pipeline · Ansiversa Mini App</p>
-          <h1 class="job-home-hero__title">Job Tracker</h1>
-          <p class="job-home-hero__lead">
-            Keep every application stage visible, move quickly on updates, and review your search momentum without spreadsheet overhead.
+  <section class="av-hero">
+    <AvContainer size="default">
+      <div class="av-hero__grid">
+        <div class="av-hero__content av-auth-stack-md">
+          <div class="av-kicker">
+            <span>Career · Ansiversa Mini App</span>
+          </div>
+          <h1 class="av-section-title">Job Tracker</h1>
+          <p class="av-section-lead">
+            Track applications from wishlist to final outcome with a clean pipeline built for real job search follow-through.
           </p>
-          <div class="job-home-hero__bullets">
-            <span>Track pipeline stages from wishlist to accepted</span>
-            <span>Update statuses quickly from one focused flow</span>
-            <span>Keep a clean, review-ready application history</span>
-          </div>
-          <div class="job-home-hero__cta">
+          <ul class="av-list">
+            <li>Keep every role visible from first save to final decision</li>
+            <li>Update statuses, interviews, and notes without spreadsheet clutter</li>
+            <li>Review search momentum and next steps in one focused flow</li>
+          </ul>
+          <div class="av-row-wrap">
             <AvButton href="/app/job-applications">Open Job Tracker</AvButton>
-            <AvButton variant="ghost" href="/help">Help</AvButton>
+            <AvButton href="/help" variant="ghost">Help</AvButton>
           </div>
-          <p class="job-home-hero__note">Simple daily flow. Clear weekly review.</p>
+          <p class="av-text-soft">Built for organized search rhythm, not zero-data dashboard noise.</p>
         </div>
 
-        <div class="job-home-hero__panel">
-          <div class="job-home-hero__panel-card">
-            <p class="job-home-hero__panel-kicker">Your pipeline</p>
-            <h2 class="job-home-hero__panel-title">Current stage breakdown</h2>
-            <ol class="job-home-hero__panel-list">
-              {JOB_APPLICATION_STATUS.map((status) => (
-                <li>
-                  <span>{JOB_APPLICATION_STATUS_LABEL[status]}</span>
-                  <strong>{statusCounts[status]}</strong>
-                </li>
-              ))}
-            </ol>
-            <div class="job-home-hero__panel-footer">
-              <div class="job-home-hero__panel-metric">
-                <p class="job-home-hero__panel-label">Active pipeline</p>
-                <p class="job-home-hero__panel-value">{activeCount}</p>
-              </div>
-              <div class="job-home-hero__panel-metric">
-                <p class="job-home-hero__panel-label">Closed outcomes</p>
-                <p class="job-home-hero__panel-value">{statusCounts.rejected + statusCounts.accepted}</p>
-              </div>
-            </div>
+        <AvCard variant="soft" className="av-auth-stack-sm">
+          <p class="av-kicker">Stage flow</p>
+          <h2 class="av-card-heading">A simple pipeline for the full search</h2>
+          <ol class="av-list">
+            {stageFlow.map((stage) => (
+              <li>
+                <strong>{stage.name}</strong> — {stage.detail}
+              </li>
+            ))}
+          </ol>
+          <div class="av-row-between">
+            <p class="av-text-soft">Use it daily</p>
+            <p class="av-text-soft">Review it weekly</p>
           </div>
-        </div>
-      </div>
-
-      <div class="job-home-stats">
-        <div class="job-home-stat">
-          <p class="job-home-stat__value">{applications.length}</p>
-          <p class="job-home-stat__label">Total applications</p>
-        </div>
-        <div class="job-home-stat">
-          <p class="job-home-stat__value">{activeCount}</p>
-          <p class="job-home-stat__label">Active pipeline</p>
-        </div>
-        <div class="job-home-stat">
-          <p class="job-home-stat__value">{statusCounts.interview}</p>
-          <p class="job-home-stat__label">Interviews</p>
-        </div>
-        <div class="job-home-stat">
-          <p class="job-home-stat__value">{statusCounts.offer}</p>
-          <p class="job-home-stat__label">Offers</p>
-        </div>
-      </div>
-    </AvContainer>
-  </section>
-
-  <section class="av-section job-home-pillars-section">
-    <AvContainer size="default" className="job-home-container">
-      <div class="job-home-section-head">
-        <h2 class="av-section-title">What makes Job Tracker different</h2>
-        <p class="av-section-lead">
-          Built for pipeline clarity so every status update gives you useful next-step visibility.
-        </p>
-      </div>
-
-      <div class="job-home-pillars">
-        <AvCard variant="soft" className="job-home-pillar">
-          <p class="av-kicker">Pillar 01</p>
-          <h3 class="av-card-heading">Pipeline-first tracking</h3>
-          <p class="av-text-soft">Every application maps to a clear stage so your search never gets scattered.</p>
-        </AvCard>
-        <AvCard variant="soft" className="job-home-pillar">
-          <p class="av-kicker">Pillar 02</p>
-          <h3 class="av-card-heading">Fast status updates</h3>
-          <p class="av-text-soft">Quick stage changes keep counts accurate without leaving the main list flow.</p>
-        </AvCard>
-        <AvCard variant="soft" className="job-home-pillar">
-          <p class="av-kicker">Pillar 03</p>
-          <h3 class="av-card-heading">Clean review history</h3>
-          <p class="av-text-soft">Recent items and stage totals make weekly review easy and objective.</p>
         </AvCard>
       </div>
     </AvContainer>
   </section>
 
   <section class="av-section">
-    <AvContainer size="default" className="job-home-container">
-      <AvCard variant="soft" className="job-home-recent-card">
-        <div class="av-row-between app-row-top">
-          <h2 class="av-card-heading">Recent applications</h2>
-          <AvButton variant="ghost" href="/app/job-applications">View full pipeline</AvButton>
-        </div>
+    <AvContainer size="default">
+      <div class="av-section-header">
+        <h2 class="av-section-title">Why Job Tracker</h2>
+        <p class="av-section-lead">A clearer application workflow for people who want search discipline without admin overload.</p>
+      </div>
+      <div class="av-grid-auto av-grid-auto--260">
+        {pillars.map((pillar) => (
+          <AvCard variant="soft" className="av-auth-stack-sm av-card--fullheight">
+            <h3 class="av-card-heading">{pillar.title}</h3>
+            <p class="av-text-soft">{pillar.body}</p>
+          </AvCard>
+        ))}
+      </div>
+    </AvContainer>
+  </section>
 
-        {applications.length === 0 ? (
-          <div class="job-home-empty">
-            <AvEmptyState
-              title="No applications yet"
-              description="Create your first application to start building your pipeline."
-            />
-            <div>
-              <AvButton href="/app/job-applications">Create first application</AvButton>
-            </div>
-          </div>
-        ) : (
-          <div class="av-auth-stack-xs">
-            {recentApplications.map((application) => (
-              <div class="av-card av-card-soft job-home-recent-item">
-                <div>
-                  <h3 class="av-card-heading">{application.companyName}</h3>
-                  <p class="av-text-soft">{application.roleTitle} · Applied {application.appliedDate}</p>
-                </div>
-                <span class="av-badge av-badge-soft">{JOB_APPLICATION_STATUS_LABEL[application.status]}</span>
-              </div>
-            ))}
-          </div>
-        )}
+  <section class="av-section">
+    <AvContainer size="default">
+      <div class="av-section-header">
+        <div class="av-kicker"><span>How it works</span></div>
+        <h2 class="av-section-title">Add → Update → Review</h2>
+        <p class="av-section-lead">Three steps to stay organized from first application to final outcome.</p>
+      </div>
+      <AvTimeline items={workflowItems} />
+    </AvContainer>
+  </section>
+
+  <section class="av-section">
+    <AvContainer size="default">
+      <AvCard variant="soft" className="av-row-between av-card--fullheight">
+        <div class="av-auth-stack-xxs">
+          <h2 class="av-section-title">Ready to organize your job search?</h2>
+          <p class="av-text-soft">Start tracking roles, follow-ups, and outcomes in one pipeline built for clarity.</p>
+        </div>
+        <AvButton href="/app/job-applications">Open Job Tracker</AvButton>
       </AvCard>
     </AvContainer>
   </section>
