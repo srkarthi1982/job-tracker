@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { ActionError, defineAction, type ActionAPIContext } from "astro:actions";
-import { asc, db, desc, eq, inArray, job_application_events, job_applications } from "astro:db";
+import { and, asc, db, desc, eq, inArray, job_application_events, job_applications } from "astro:db";
 import { z } from "astro:schema";
 import { requireUser } from "./_guards";
 import {
@@ -106,6 +106,24 @@ const pushSummaryActivity = async (userId: string, event: string, entityId?: str
   });
 };
 
+const findOwnedApplication = async (userId: string, applicationId: string) => {
+  const rows = await db
+    .select()
+    .from(job_applications)
+    .where(and(eq(job_applications.id, applicationId), eq(job_applications.userId, userId)))
+    .limit(1);
+
+  return rows[0] ?? null;
+};
+
+const requireOwnedApplication = async (userId: string, applicationId: string) => {
+  const application = await findOwnedApplication(userId, applicationId);
+  if (!application) {
+    throw new ActionError({ code: "NOT_FOUND", message: "Application not found" });
+  }
+  return application;
+};
+
 const logEvent = async (input: {
   applicationId: string;
   userId: string;
@@ -114,10 +132,15 @@ const logEvent = async (input: {
   eventDate: string;
   notes?: string | null;
 }) => {
+  const application = await findOwnedApplication(input.userId, input.applicationId);
+  if (!application) {
+    throw new ActionError({ code: "NOT_FOUND", message: "Application not found" });
+  }
+
   await db.insert(job_application_events).values({
     id: randomUUID(),
-    applicationId: input.applicationId,
-    userId: input.userId,
+    applicationId: application.id,
+    userId: application.userId,
     eventType: input.eventType,
     eventLabel: input.eventLabel,
     eventDate: toDbDate(input.eventDate),
@@ -126,19 +149,27 @@ const logEvent = async (input: {
   });
 };
 
-const withEvents = async (userId: string, rows: any[]) => {
+type ApplicationRowWithEvents = {
+  id: string;
+  events?: unknown[];
+  [key: string]: unknown;
+};
+
+const withEvents = async (userId: string, rows: ApplicationRowWithEvents[]) => {
   if (!rows.length) return rows.map((row) => ({ ...row, events: [] }));
   const applicationIds = rows.map((row) => row.id);
 
   const eventRows = await db
     .select()
     .from(job_application_events)
-    .where(inArray(job_application_events.applicationId, applicationIds))
+    .where(and(
+      eq(job_application_events.userId, userId),
+      inArray(job_application_events.applicationId, applicationIds),
+    ))
     .orderBy(desc(job_application_events.eventDate), desc(job_application_events.createdAt));
 
   const eventsByApplication = new Map<string, ReturnType<typeof normalizeJobApplicationEvent>[]>();
   for (const eventRow of eventRows) {
-    if (eventRow.userId !== userId) continue;
     const normalized = normalizeJobApplicationEvent(eventRow);
     const existing = eventsByApplication.get(normalized.applicationId) ?? [];
     existing.push(normalized);
@@ -258,17 +289,8 @@ export const updateApplication = defineAction({
     const user = requireUser(context);
     const payload = normalizePayload(data);
 
-    const existing = await db
-      .select()
-      .from(job_applications)
-      .where(eq(job_applications.id, id))
-      .limit(1);
-
-    if (!existing[0] || existing[0].userId !== user.id) {
-      throw new ActionError({ code: "NOT_FOUND", message: "Application not found" });
-    }
-
-    const previous = normalizeJobApplication(existing[0]);
+    const existing = await requireOwnedApplication(user.id, id);
+    const previous = normalizeJobApplication(existing);
 
     const updated = await db
       .update(job_applications)
@@ -289,7 +311,7 @@ export const updateApplication = defineAction({
         notes: payload.notes,
         updatedAt: new Date(),
       })
-      .where(eq(job_applications.id, id))
+      .where(and(eq(job_applications.id, id), eq(job_applications.userId, user.id)))
       .returning();
 
     const nextStatus = payload.status as JobApplicationStatus;
@@ -361,18 +383,13 @@ export const deleteApplication = defineAction({
   async handler({ id }, context: ActionAPIContext) {
     const user = requireUser(context);
 
-    const existing = await db
-      .select({ id: job_applications.id, userId: job_applications.userId })
-      .from(job_applications)
-      .where(eq(job_applications.id, id))
-      .limit(1);
+    await requireOwnedApplication(user.id, id);
 
-    if (!existing[0] || existing[0].userId !== user.id) {
-      throw new ActionError({ code: "NOT_FOUND", message: "Application not found" });
-    }
-
-    await db.delete(job_application_events).where(eq(job_application_events.applicationId, id));
-    await db.delete(job_applications).where(eq(job_applications.id, id));
+    await db.delete(job_application_events).where(and(
+      eq(job_application_events.applicationId, id),
+      eq(job_application_events.userId, user.id),
+    ));
+    await db.delete(job_applications).where(and(eq(job_applications.id, id), eq(job_applications.userId, user.id)));
 
     void pushSummaryActivity(user.id, "jobApplications.deleted", id);
 
@@ -385,17 +402,8 @@ export const generateApplicationAiAssist = defineAction({
   async handler({ applicationId, action }, context: ActionAPIContext) {
     const user = requireUser(context);
 
-    const rows = await db
-      .select()
-      .from(job_applications)
-      .where(eq(job_applications.id, applicationId))
-      .limit(1);
-
-    if (!rows[0] || rows[0].userId !== user.id) {
-      throw new ActionError({ code: "NOT_FOUND", message: "Application not found" });
-    }
-
-    const rowsWithEvents = await withEvents(user.id, rows);
+    const applicationRow = await requireOwnedApplication(user.id, applicationId);
+    const rowsWithEvents = await withEvents(user.id, [applicationRow]);
     const application = normalizeJobApplication(rowsWithEvents[0]);
     const preset = action as JobApplicationAiAction;
 
@@ -416,17 +424,8 @@ export const generateApplicationMatchIntelligence = defineAction({
   async handler({ applicationId }, context: ActionAPIContext) {
     const user = requireUser(context);
 
-    const rows = await db
-      .select()
-      .from(job_applications)
-      .where(eq(job_applications.id, applicationId))
-      .limit(1);
-
-    if (!rows[0] || rows[0].userId !== user.id) {
-      throw new ActionError({ code: "NOT_FOUND", message: "Application not found" });
-    }
-
-    const application = normalizeJobApplication(rows[0]);
+    const applicationRow = await requireOwnedApplication(user.id, applicationId);
+    const application = normalizeJobApplication(applicationRow);
     const guardrailMessage = getMatchIntelligenceGuardrailMessage({
       jobDescription: application.jobDescription,
       resumeText: application.resumeSnapshotText,

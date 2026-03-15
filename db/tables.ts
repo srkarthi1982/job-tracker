@@ -41,7 +41,8 @@ export const job_application_events = defineTable({
   },
   indexes: [
     { name: "job_app_events_user_idx", on: "userId" },
-    { name: "job_app_events_application_idx", on: ["applicationId", "eventDate"] },
+    { name: "job_app_events_user_application_idx", on: ["userId", "applicationId", "eventDate"] },
+    { name: "job_app_events_application_user_created_idx", on: ["applicationId", "userId", "createdAt"] },
     { name: "job_app_events_created_idx", on: ["userId", "createdAt"] },
   ],
 });

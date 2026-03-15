@@ -28,6 +28,8 @@ This file complements the workspace-level Ansiversa-workspace/AGENTS.md (source 
 - Registry write deferred in Slice 1 (no parent write performed).
 
 ## Task Log (Recent)
+- 2026-03-15 Freeze hardening pass (Astra review follow-up): tightened `src/lib/webhook.ts` so only `response.ok` counts as success and non-2xx webhook responses log explicit failure context; replaced `window.confirm()` delete flow with shared `AvConfirmDialog`-based confirmation showing `companyName · roleTitle` before destructive action (`src/modules/job-applications/store.ts`, `src/pages/app/job-applications.astro`, `src/env.d.ts`); enforced application ownership earlier in action/query paths and strengthened event write/delete safeguards plus event indexes (`src/actions/jobApplications.ts`, `db/tables.ts`); and renamed misleading in-app “AI” helper wording to truthful helper/match-helper language (`src/pages/app/job-applications.astro`, `src/modules/job-applications/aiAssistant.ts`). Verification: `npm run typecheck` ✅ (existing auth-page hints only), `npm run build` ✅.
+
 - 2026-03-10 Demo presentation data seeded (Job Tracker): inserted realistic remote records for the active existing user in `job_applications` (10 new applications) with matching `job_application_events` (30 new timeline events) across all pipeline statuses (`wishlist`, `applied`, `interview`, `offer`, `rejected`, `accepted`) so home/app summary metrics and pipeline breakdown render with production-like values for Astra presentation. No app code, UI, or schema changes.
 
 - 2026-03-10 Remote DB schema push executed for Job Tracker: ran `npm run db:push` (`astro db push --remote`) and applied pending remote schema updates successfully (`Push complete!`).

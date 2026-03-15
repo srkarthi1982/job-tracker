@@ -48,15 +48,15 @@ const getContextLines = (application: JobApplicationDTO) => {
 
 export const getAiGuardrailMessage = (action: JobApplicationAiAction, application: JobApplicationDTO) => {
   if (!application.roleTitle || !application.companyName) {
-    return "Add company and role title to generate useful AI suggestions.";
+    return "Add company and role title to generate useful suggestions.";
   }
 
   if (!application.notes && action !== "summarizeStatus") {
-    return "Add notes to get stronger AI suggestions tailored to your context.";
+    return "Add notes to get stronger suggestions tailored to your context.";
   }
 
   if (action === "draftThankYouNote" && !application.interviewDate) {
-    return "Interview date is required for thank-you note suggestions.";
+    return "Interview date is required for a thank-you note draft.";
   }
 
   return null;

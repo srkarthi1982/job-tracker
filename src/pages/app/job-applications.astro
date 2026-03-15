@@ -3,6 +3,7 @@ import {
   AvBreadcrumb,
   AvButton,
   AvCard,
+  AvConfirmDialog,
   AvContainer,
   AvEmptyState,
 } from "@ansiversa/components";
@@ -25,8 +26,12 @@ const description = "Manage your job application pipeline.";
 const result = await Astro.callAction(actions.jobApplications.fetchMyApplications, {
   limit: 200,
 });
-const data = (result as any)?.data ?? (result as any) ?? {};
-const applications = (data?.applications ?? []) as JobApplicationDTO[];
+const resultData = result as unknown;
+const applications = (
+  resultData && typeof resultData === "object" && "data" in resultData
+    ? (resultData as { data?: { applications?: JobApplicationDTO[] } }).data?.applications
+    : (resultData as { applications?: JobApplicationDTO[] } | undefined)?.applications
+) ?? [];
 const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
 
 ---
@@ -267,18 +272,18 @@ const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
                               <span x-text="isTimelineExpanded(application.id) ? 'Hide history' : 'View history'"></span>
                             </AvButton>
                             <AvButton type="button" variant="ghost" @click="toggleAiPanel(application.id)" :disabled="loading || aiState(application.id).loading">
-                              <span x-text="aiState(application.id).open ? 'Hide AI assist' : 'AI Assist'"></span>
+                              <span x-text="aiState(application.id).open ? 'Hide helper' : 'Follow-up helper'"></span>
                             </AvButton>
                             <AvButton type="button" variant="ghost" @click="toggleMatchPanel(application.id)" :disabled="loading || matchState(application.id).loading">
-                              <span x-text="matchState(application.id).open ? 'Hide resume match' : 'Resume match'"></span>
+                              <span x-text="matchState(application.id).open ? 'Hide match helper' : 'Resume match helper'"></span>
                             </AvButton>
                             <AvButton type="button" variant="ghost" @click="openEdit(application)" :disabled="loading">Edit</AvButton>
-                            <AvButton type="button" variant="ghost" @click="deleteApplication(application.id)" :disabled="loading">Delete</AvButton>
+                            <AvButton type="button" variant="ghost" @click="openDeleteConfirm(application)" :disabled="loading">Delete</AvButton>
                           </div>
 
                           <div class="app-ai-panel av-auth-stack-xs" x-show="aiState(application.id).open">
                             <div class="av-row-between">
-                              <h4 class="app-subheading">AI follow-up assistant</h4>
+                              <h4 class="app-subheading">Follow-up helper</h4>
                               <p class="av-text-soft" x-show="aiState(application.id).result" x-text="`Updated ${new Date(aiState(application.id).result.generatedAt).toLocaleString()}`"></p>
                             </div>
                             <p class="av-text-soft">Choose a practical preset tied to this application.</p>
@@ -303,22 +308,22 @@ const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
                                 <AvButton type="button" variant="ghost" @click="regenerateAiAction(application.id)" :disabled="aiState(application.id).loading || !aiState(application.id).lastAction">Regenerate</AvButton>
                               </div>
                             </div>
-                            <p class="av-text-soft" x-show="aiState(application.id).loading">Generating suggestion…</p>
+                            <p class="av-text-soft" x-show="aiState(application.id).loading">Preparing suggestion…</p>
                           </div>
 
                           <div class="app-match-panel av-auth-stack-xs" x-show="matchState(application.id).open">
                             <div class="av-row-between">
-                              <h4 class="app-subheading">Resume → Job match intelligence</h4>
+                              <h4 class="app-subheading">Resume match helper</h4>
                               <p class="av-text-soft" x-show="matchState(application.id).result" x-text="`Updated ${new Date(matchState(application.id).result.generatedAt).toLocaleString()}`"></p>
                             </div>
-                            <p class="av-text-soft">Analyze resume fit against this application&apos;s job description.</p>
+                            <p class="av-text-soft">Review resume fit against this application&apos;s job description.</p>
                             <p class="app-form-error" x-show="matchState(application.id).error" x-text="matchState(application.id).error"></p>
                             <div class="av-row-wrap">
-                              <AvButton type="button" variant="ghost" @click="runMatchAnalysis(application.id)" :disabled="matchState(application.id).loading">Analyze match</AvButton>
+                              <AvButton type="button" variant="ghost" @click="runMatchAnalysis(application.id)" :disabled="matchState(application.id).loading">Analyze resume match</AvButton>
                               <AvButton type="button" variant="ghost" @click="runMatchAnalysis(application.id)" :disabled="matchState(application.id).loading || !matchState(application.id).result">Regenerate</AvButton>
                               <AvButton type="button" variant="ghost" @click="copyMatchOutput(application.id)" :disabled="!matchState(application.id).result">Copy</AvButton>
                             </div>
-                            <p class="av-text-soft" x-show="matchState(application.id).loading">Generating match analysis…</p>
+                            <p class="av-text-soft" x-show="matchState(application.id).loading">Analyzing resume match…</p>
                             <div class="app-match-result av-auth-stack-xs" x-show="matchState(application.id).result">
                               <p class="app-match-score"><span x-text="`${matchState(application.id).result?.matchScore}%`"></span></p>
                               <p class="av-text-soft" x-text="matchState(application.id).result?.summary"></p>
@@ -598,6 +603,17 @@ const aiActions = [...JOB_APPLICATION_AI_ACTIONS];
             </div>
           </SettingsDrawer>
         </template>
+
+        <AvConfirmDialog
+          id="job-application-delete-dialog"
+          headline="Delete this application?"
+          description="This action cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          variant="danger"
+          @av-confirm="confirmDeleteApplication()"
+          @av-cancel="clearDeleteConfirmation()"
+        />
       </div>
     </AvContainer>
   </section>

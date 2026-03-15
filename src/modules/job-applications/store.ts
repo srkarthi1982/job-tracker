@@ -34,6 +34,12 @@ type JobApplicationTimelineItem = {
   sortTime: number;
 };
 
+type DeleteConfirmationState = {
+  id: string;
+  companyName: string;
+  roleTitle: string;
+};
+
 export type JobApplicationSortOption =
   | "updatedDesc"
   | "updatedAsc"
@@ -60,6 +66,8 @@ const defaultForm = (): JobApplicationForm => ({
 });
 
 const todayDate = () => new Date().toISOString().slice(0, 10);
+
+const DELETE_DIALOG_ID = "job-application-delete-dialog";
 
 type ApplicationAiUiState = {
   open: boolean;
@@ -105,6 +113,7 @@ export class JobApplicationsStore extends AvBaseStore {
   loading = false;
   error: string | null = null;
   success: string | null = null;
+  pendingDelete: DeleteConfirmationState | null = null;
   expandedTimelineIds: string[] = [];
   aiByApplicationId: Record<string, ApplicationAiUiState> = {};
   matchByApplicationId: Record<string, ApplicationMatchUiState> = {};
@@ -291,6 +300,42 @@ export class JobApplicationsStore extends AvBaseStore {
     return this.expandedTimelineIds.includes(id);
   }
 
+  private getErrorMessage(error: unknown, fallback: string) {
+    if (error instanceof Error && error.message) return error.message;
+    return fallback;
+  }
+
+  private syncDeleteDialogCopy() {
+    if (typeof document === "undefined") return;
+
+    const description = document.getElementById(`${DELETE_DIALOG_ID}-desc`);
+    if (!description) return;
+
+    if (!this.pendingDelete) {
+      description.textContent = "This action cannot be undone.";
+      return;
+    }
+
+    description.textContent = `${this.pendingDelete.companyName} · ${this.pendingDelete.roleTitle}. This action cannot be undone and will remove its timeline history.`;
+  }
+
+  openDeleteConfirm(application: JobApplicationDTO) {
+    if (this.loading) return;
+
+    this.pendingDelete = {
+      id: application.id,
+      companyName: application.companyName,
+      roleTitle: application.roleTitle,
+    };
+    this.syncDeleteDialogCopy();
+    window.AvDialog?.open(DELETE_DIALOG_ID);
+  }
+
+  clearDeleteConfirmation() {
+    this.pendingDelete = null;
+    this.syncDeleteDialogCopy();
+  }
+
   matchState(id: string) {
     if (!this.matchByApplicationId[id]) {
       this.matchByApplicationId = { ...this.matchByApplicationId, [id]: defaultMatchState() };
@@ -330,8 +375,8 @@ export class JobApplicationsStore extends AvBaseStore {
       const res = await actions.jobApplications.generateApplicationMatchIntelligence({ applicationId: id });
       const data = this.unwrapResult<{ result: JobMatchIntelligenceResultDTO }>(res);
       this.setMatchState(id, { loading: false, result: data.result });
-    } catch (err: any) {
-      this.setMatchState(id, { loading: false, error: err?.message || "Unable to analyze resume match." });
+    } catch (error) {
+      this.setMatchState(id, { loading: false, error: this.getErrorMessage(error, "Unable to analyze resume match.") });
     }
   }
 
@@ -413,11 +458,11 @@ export class JobApplicationsStore extends AvBaseStore {
         lastAction: action,
         result: data.result,
       });
-    } catch (err: any) {
+    } catch (error) {
       this.setAiState(id, {
         loading: false,
         activeAction: null,
-        error: err?.message || "Unable to generate AI suggestion.",
+        error: this.getErrorMessage(error, "Unable to generate helper suggestion."),
       });
     }
   }
@@ -434,7 +479,7 @@ export class JobApplicationsStore extends AvBaseStore {
 
     try {
       await navigator.clipboard.writeText(state.result.output);
-      this.success = "AI output copied.";
+      this.success = "Helper output copied.";
     } catch {
       this.error = "Unable to copy output.";
     }
@@ -549,8 +594,8 @@ export class JobApplicationsStore extends AvBaseStore {
       }
       this.success = "Application created.";
       this.closeDrawer();
-    } catch (err: any) {
-      this.error = err?.message || "Unable to create application.";
+    } catch (error) {
+      this.error = this.getErrorMessage(error, "Unable to create application.");
     } finally {
       this.loading = false;
     }
@@ -584,21 +629,16 @@ export class JobApplicationsStore extends AvBaseStore {
       }
       this.success = "Application updated.";
       this.closeDrawer();
-    } catch (err: any) {
-      this.error = err?.message || "Unable to update application.";
+    } catch (error) {
+      this.error = this.getErrorMessage(error, "Unable to update application.");
     } finally {
       this.loading = false;
     }
   }
 
-  async deleteApplication(id: string) {
+  async confirmDeleteApplication() {
+    const id = this.pendingDelete?.id;
     if (!id || this.loading) return;
-
-    const approved = typeof window !== "undefined"
-      ? window.confirm("Delete this application entry?")
-      : true;
-
-    if (!approved) return;
 
     this.loading = true;
     this.error = null;
@@ -614,9 +654,10 @@ export class JobApplicationsStore extends AvBaseStore {
       const nextMatchState = { ...this.matchByApplicationId };
       delete nextMatchState[id];
       this.matchByApplicationId = nextMatchState;
+      this.clearDeleteConfirmation();
       this.success = "Application deleted.";
-    } catch (err: any) {
-      this.error = err?.message || "Unable to delete application.";
+    } catch (error) {
+      this.error = this.getErrorMessage(error, "Unable to delete application.");
     } finally {
       this.loading = false;
     }
@@ -658,8 +699,8 @@ export class JobApplicationsStore extends AvBaseStore {
         );
       }
       this.success = "Status updated.";
-    } catch (err: any) {
-      this.error = err?.message || "Unable to update status.";
+    } catch (error) {
+      this.error = this.getErrorMessage(error, "Unable to update status.");
     } finally {
       this.loading = false;
     }
